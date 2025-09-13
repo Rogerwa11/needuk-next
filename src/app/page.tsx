@@ -9,14 +9,14 @@ export default function Home() {
           {/* Coluna Esquerda - Conteúdo */}
           <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
             {/* Logo */}
-            <div className="flex items-center mb-12">
-              <div className="flex items-center">
+            <div className="flex items-center mb-6">
+              <div>
                 <Image
                   src="/logo.png"
                   alt="Needuk"
-                  width={180}
-                  height={180}
-                  className="w-32 h-32 md:w-64 md:h-44 object-contain"
+                  width={120}
+                  height={120}
+                  className="w-24 h-24 md:w-44 md:h-32 object-contain transition-transform duration-300 hover:scale-105"
                   priority
                 />
               </div>
