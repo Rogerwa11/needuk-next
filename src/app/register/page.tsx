@@ -3,6 +3,8 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle, User, Building, GraduationCap } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 
 type UserType = 'aluno' | 'recrutador' | 'gestor';
 
@@ -32,6 +34,8 @@ interface FormData {
 }
 
 export default function Register() {
+    const { data: session, status } = useSession();
+    const router = useRouter();
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -39,6 +43,13 @@ export default function Register() {
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
+
+    // Redirecionar se já estiver logado
+    useEffect(() => {
+        if (status === 'authenticated') {
+            router.push('/dashboard');
+        }
+    }, [status, router]);
 
     const [formData, setFormData] = useState<FormData>({
         userType: 'aluno',
@@ -175,13 +186,37 @@ export default function Register() {
             .replace(/(-\d{3})\d+?$/, '$1');
     };
 
+    // Função para detectar se é CPF ou CNPJ e formatar adequadamente
+    const formatCpfOrCnpj = (value: string) => {
+        const cleanValue = value.replace(/\D/g, '');
+
+        if (cleanValue.length <= 11) {
+            // Formatar como CPF
+            return formatCPF(value);
+        } else {
+            // Formatar como CNPJ
+            return formatCNPJ(value);
+        }
+    };
+
     const handleInputChange = (field: keyof FormData, value: string) => {
         let formattedValue = value;
 
         if (field === 'cpf') {
-            formattedValue = formatCPF(value);
+            if (formData.userType === 'aluno') {
+                formattedValue = formatCPF(value);
+            } else {
+                // Para recrutador e gestor, detectar automaticamente CPF ou CNPJ
+                formattedValue = formatCpfOrCnpj(value);
+                // Limpar CNPJ se estiver digitando CPF
+                if (value.replace(/\D/g, '').length <= 11) {
+                    setFormData(prev => ({ ...prev, cnpj: '' }));
+                }
+            }
         } else if (field === 'cnpj') {
             formattedValue = formatCNPJ(value);
+            // Limpar CPF se estiver digitando CNPJ
+            setFormData(prev => ({ ...prev, cpf: '' }));
         } else if (field === 'telefone') {
             formattedValue = formatPhone(value);
         } else if (field === 'cep') {
@@ -229,9 +264,20 @@ export default function Register() {
     const validateStep2 = () => {
         const newErrors: Partial<FormData> = {};
 
-        // CPF é sempre obrigatório
-        if (!formData.cpf || formData.cpf.length < 14) {
-            newErrors.cpf = 'CPF é obrigatório e deve estar completo';
+        // Validação de CPF ou CNPJ baseado no tipo de usuário
+        if (formData.userType === 'aluno') {
+            // Aluno: apenas CPF
+            if (!formData.cpf || formData.cpf.length < 14) {
+                newErrors.cpf = 'CPF é obrigatório e deve estar completo';
+            }
+        } else {
+            // Recrutador e Gestor: CPF ou CNPJ
+            const hasCpf = formData.cpf && formData.cpf.length >= 14;
+            const hasCnpj = formData.cnpj && formData.cnpj.length >= 18;
+
+            if (!hasCpf && !hasCnpj) {
+                newErrors.cpf = 'CPF ou CNPJ é obrigatório';
+            }
         }
 
         // Telefone obrigatório
@@ -334,9 +380,25 @@ export default function Register() {
         setLoading(true);
 
         try {
-            console.log('Dados do registro:', formData);
-            await new Promise(resolve => setTimeout(resolve, 2000));
-            showToastMessage('Conta criada com sucesso!', 'success');
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(formData),
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showToastMessage('Conta criada com sucesso!', 'success');
+                // Redirecionar para login após 2 segundos
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+            } else {
+                showToastMessage(data.error || 'Erro ao criar conta', 'error');
+            }
         } catch (error) {
             showToastMessage('Erro ao criar conta. Tente novamente.', 'error');
         } finally {
@@ -757,18 +819,29 @@ export default function Register() {
                             <>
                                 <h2 className="text-xl font-semibold text-gray-800 mb-4">Documentos e Contato</h2>
 
-                                {/* CPF (sempre visível) */}
+                                {/* CPF/CNPJ baseado no tipo de usuário */}
                                 <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                    <label className="text-gray-700 font-semibold">CPF</label>
+                                    <label className="text-gray-700 font-semibold">
+                                        {formData.userType === 'aluno' ? 'CPF' : 'CPF ou CNPJ'}
+                                    </label>
                                     <input
                                         type="text"
                                         value={formData.cpf}
                                         onChange={(e) => handleInputChange('cpf', e.target.value)}
-                                        placeholder="000.000.000-00"
-                                        maxLength={14}
+                                        placeholder={
+                                            formData.userType === 'aluno'
+                                                ? "000.000.000-00"
+                                                : "CPF: 000.000.000-00 ou CNPJ: 00.000.000/0000-00"
+                                        }
+                                        maxLength={formData.userType === 'aluno' ? 14 : 18}
                                         className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cpf ? 'border-red-500 focus:ring-red-500' : `border-gray-300 focus:ring-${formData.userType === 'aluno' ? 'blue' : formData.userType === 'recrutador' ? 'green' : 'purple'}-500`
                                             }`}
                                     />
+                                    {formData.userType !== 'aluno' && (
+                                        <p className="text-xs text-gray-500 text-center">
+                                            Digite seu CPF (11 dígitos) ou CNPJ (14 dígitos)
+                                        </p>
+                                    )}
                                     {errors.cpf && (
                                         <p className="text-red-500 text-sm flex items-center gap-1">
                                             <AlertCircle className="h-4 w-4" />
@@ -776,21 +849,6 @@ export default function Register() {
                                         </p>
                                     )}
                                 </div>
-
-                                {/* CNPJ (apenas para recrutador e gestor) */}
-                                {formData.userType !== 'aluno' && (
-                                    <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                        <label className="text-gray-700 font-semibold">CNPJ (opcional)</label>
-                                        <input
-                                            type="text"
-                                            value={formData.cnpj}
-                                            onChange={(e) => handleInputChange('cnpj', e.target.value)}
-                                            placeholder="00.000.000/0000-00"
-                                            maxLength={18}
-                                            className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-${formData.userType === 'recrutador' ? 'green' : 'purple'}-500`}
-                                        />
-                                    </div>
-                                )}
 
                                 {/* Telefone */}
                                 <div className="flex flex-col items-center gap-2 w-full max-w-md">
