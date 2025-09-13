@@ -11,7 +11,14 @@ export default function Home() {
             {/* Logo */}
             <div className="flex items-center mb-12">
               <div className="flex items-center">
-                <Image src="/logo.png" alt="Needuk" width={256} height={256} />
+                <Image
+                  src="/logo.png"
+                  alt="Needuk"
+                  width={180}
+                  height={180}
+                  className="w-32 h-32 md:w-64 md:h-44 object-contain"
+                  priority
+                />
               </div>
             </div>
 
