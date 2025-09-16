@@ -95,7 +95,7 @@ export default function Login() {
             const result = await signIn('credentials', {
                 email: email.toLowerCase().trim(),
                 password,
-                redirect: false,
+                redirect: true,
             });
 
             if (result?.error) {
@@ -141,14 +141,14 @@ export default function Login() {
             <div className="max-w-7xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-8 md:p-10 lg:p-12">
                     {/* Logo */}
-                    <div className="flex items-center justify-center mb-8">
-                        <div className="">
+                    <div className="flex items-center justify-center mb-6">
+                        <div>
                             <Image
                                 src="/logo.png"
                                 alt="Needuk"
-                                width={180}
-                                height={180}
-                                className="w-32 h-32 md:w-64 md:h-44 object-contain"
+                                width={120}
+                                height={120}
+                                className="w-24 h-24 md:w-44 md:h-32 object-contain transition-transform duration-300 hover:scale-105"
                                 priority
                             />
                         </div>

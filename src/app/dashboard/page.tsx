@@ -26,7 +26,7 @@ export default function Dashboard() {
 
             // Fazer logout do NextAuth
             await signOut({
-                redirect: false,
+                redirect: true,
                 callbackUrl: '/login'
             })
 
