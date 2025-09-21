@@ -1,0 +1,97 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id            String  @id @default(cuid())
+  name          String
+  email         String
+  emailVerified Boolean @default(false)
+  image         String?
+
+  // Dados pessoais
+  userType String // 'aluno', 'recrutador', 'gestor'
+  cpf      String?
+  cnpj     String?
+  telefone String
+  endereco String
+  cidade   String
+  estado   String
+  cep      String
+  plan     String  @default("free") // 'free', 'plus', 'premium', 'pro'
+
+  // Campos específicos para Aluno
+  curso        String?
+  universidade String?
+  periodo      String?
+
+  // Campos específicos para Recrutador
+  nomeEmpresa String?
+  cargo       String?
+  setor       String?
+
+  // Campos específicos para Gestor
+  nomeUniversidade String?
+  departamento     String?
+  cargoGestor      String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @default(now()) @updatedAt
+  sessions  Session[]
+  accounts  Account[]
+
+  @@unique([email])
+  @@map("user")
+}
+
+model Session {
+  id        String   @id
+  expiresAt DateTime
+  token     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([token])
+  @@map("session")
+}
+
+model Account {
+  id                    String    @id
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@map("account")
+}
+
+model Verification {
+  id         String   @id
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
+
+  @@map("verification")
+}

@@ -1,0 +1,10 @@
+#SUPABASE DB
+
+DATABASE_URL=""
+DIRECT_URL=""
+
+#BETTER AUTH
+
+BETTER_AUTH_SECRET=robsonsafadaopegadordemachos
+BETTER_AUTH_URL=http://localhost:3000 # Base URL of your app
+NEXT_PUBLIC_URL=http://localhost:3000
