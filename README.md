@@ -1,136 +1,170 @@
-# Needuk - Conectando Talentos
+# NeedUK Next.js
 
-Plataforma que conecta estudantes universitários, empresas recrutadoras e gestores universitários para facilitar oportunidades de estágio e emprego.
+Uma plataforma de conexão entre estudantes e empresas para oportunidades de estágio e emprego.
 
-## 🚀 Funcionalidades
+## 🚀 Tecnologias
 
-- **Sistema de Autenticação** completo com NextAuth.js
-- **Dashboard personalizado** com logout seguro
-- **Proteção de rotas** com middleware inteligente
-- **Cadastro Multi-etapas** para diferentes tipos de usuários:
-  - 👨‍🎓 **Alunos**: Curso, universidade, período
-  - 🏢 **Recrutadores**: Empresa, cargo, setor
-  - 🎓 **Gestores Universitários**: Universidade, departamento
-- **Validações em tempo real** com feedback visual
-- **Banco de dados PostgreSQL** com Prisma ORM
-- **Interface moderna** com Tailwind CSS
-- **Formatação automática** de CPF, CNPJ, telefone e CEP
-- **Sessões seguras** com limpeza automática no logout
+- **Next.js 15** - Framework React
+- **TypeScript** - Tipagem estática
+- **Tailwind CSS** - Estilização
+- **Better Auth** - Autenticação
+- **Prisma** - ORM para banco de dados
+- **PostgreSQL** - Banco de dados (Supabase)
 
-## 🛠️ Tecnologias
+## 📋 Pré-requisitos
 
-- **Framework**: Next.js 15 (App Router)
-- **Linguagem**: TypeScript
-- **Banco de dados**: PostgreSQL
-- **ORM**: Prisma
-- **Autenticação**: NextAuth.js
-- **Estilização**: Tailwind CSS
-- **Ícones**: Lucide React
-- **Hash de senhas**: bcryptjs
+- Node.js 18+ 
+- npm ou yarn
+- Conta no Supabase
+- Git
 
-## 🏗️ Instalação e Configuração
+## 🛠️ Configuração do Projeto
 
 ### 1. Clone o repositório
 ```bash
-git clone https://github.com/seu-usuario/needuk-next.git
+git clone <url-do-repositorio>
 cd needuk-next
 ```
 
 ### 2. Instale as dependências
 ```bash
 npm install
+# ou
+yarn install
 ```
 
-### 3. Configure o banco de dados
-```bash
-# Com Docker (recomendado)
-docker run --name postgres -e POSTGRES_PASSWORD=sua_senha -p 5432:5432 -d postgres
+### 3. Configure as variáveis de ambiente
 
-# Ou instale PostgreSQL localmente
+Copie o arquivo de exemplo e configure suas variáveis:
+
+```bash
+cp exampleENV.txt .env.local
 ```
 
-### 4. Configure as variáveis de ambiente
-```bash
-# Copie o arquivo de exemplo
-cp env.example .env.local
+Edite o arquivo `.env.local` com suas configurações:
 
-# Edite o .env.local com suas configurações
-DATABASE_URL="postgresql://postgres:sua_senha@localhost:5432/needuk_db?schema=public"
-NEXTAUTH_URL=http://localhost:3000
-NEXTAUTH_SECRET=sua-chave-secreta-muito-forte
+```env
+# SUPABASE DB
+DATABASE_URL="postgresql://usuario:senha@host:porta/database"
+DIRECT_URL="postgresql://usuario:senha@host:porta/database"
+
+# BETTER AUTH
+BETTER_AUTH_SECRET="sua-chave-secreta-super-segura-aqui"
+BETTER_AUTH_URL="http://localhost:3000"
+NEXT_PUBLIC_URL="http://localhost:3000"
 ```
 
-### 5. Configure o Prisma
+### 4. Configure o banco de dados
+
+Execute as migrações do Prisma:
+
 ```bash
-# Sincronizar banco com schema
+npx prisma generate
 npx prisma db push
+```
+
+### 5. Execute o projeto
+
+```bash
+npm run dev
+# ou
+yarn dev
+```
+
+Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
+
+## 👥 Tipos de Usuário
+
+### 🎓 Aluno
+- Cadastro com CPF obrigatório
+- Informações acadêmicas (curso, universidade, período)
+- Acesso a planos pagos
+
+### 🏢 Recrutador
+- Cadastro com CPF ou CNPJ
+- Informações da empresa
+- Busca por talentos
+
+### 🎓 Gestor Universitário
+- Cadastro com CPF ou CNPJ
+- Informações da universidade
+- Gestão de parcerias
+
+## 🔐 Autenticação
+
+O projeto usa **Better Auth** para autenticação:
+
+- **Login/Logout** automático
+- **Proteção de rotas** baseada em sessão
+- **Redirecionamentos** inteligentes:
+  - Usuário logado → Dashboard
+  - Usuário não logado → Login/Home
+
+## 📁 Estrutura do Projeto
+
+```
+src/
+├── app/
+│   ├── dashboard/          # Dashboard do usuário
+│   ├── login/              # Página de login
+│   ├── signup/             # Página de cadastro
+│   ├── api/auth/           # Rotas de autenticação
+│   └── page.tsx            # Página inicial
+├── lib/
+│   ├── auth.ts             # Configuração do Better Auth
+│   ├── auth-client.ts      # Cliente de autenticação
+│   └── prisma.ts           # Cliente do Prisma
+└── generated/prisma/       # Cliente Prisma gerado
+```
+
+## 🚀 Scripts Disponíveis
+
+```bash
+# Desenvolvimento
+npm run dev
+
+# Build para produção
+npm run build
+
+# Executar em produção
+npm run start
 
 # Gerar cliente Prisma
 npx prisma generate
 
-# (Opcional) Visualizar dados
+# Aplicar migrações
+npx prisma db push
+
+# Abrir Prisma Studio
 npx prisma studio
 ```
 
-### 6. Execute o projeto
+## 🔧 Comandos Úteis
+
+### Prisma
 ```bash
-npm run dev
+# Ver status das migrações
+npx prisma migrate status
+
+# Reset do banco (CUIDADO!)
+npx prisma migrate reset
+
+# Visualizar dados
+npx prisma studio
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000)
+### Desenvolvimento
+```bash
+# Limpar cache do Next.js
+rm -rf .next
 
-## 📱 Páginas
-
-- **`/`** - Homepage
-- **`/login`** - Autenticação de usuários
-- **`/register`** - Cadastro multi-etapas
-- **`/dashboard`** - Painel do usuário logado (protegido)
-
-## 🗄️ Estrutura do Banco
-
-### Modelos principais:
-- **User**: Dados dos usuários (alunos, recrutadores, gestores)
-- **Account**: Contas de autenticação (NextAuth)
-- **Session**: Sessões ativas
-- **VerificationToken**: Tokens para verificação de email/reset senha
-
-### Campos específicos por tipo:
-- **Alunos**: curso, universidade, período
-- **Recrutadores**: nomeEmpresa, cargo, setor
-- **Gestores**: nomeUniversidade, departamento, cargoGestor
-
-## 🔒 Segurança
-
-- Senhas hasheadas com bcrypt
-- Validação de dados no frontend e backend
-- Proteção contra SQL injection (Prisma)
-- Sessões JWT seguras
-- Validação de email/CPF/CNPJ únicos
-
-## 🚀 Deploy
-
-### Vercel (Recomendado)
-1. Conecte seu repositório GitHub à Vercel
-2. Configure as variáveis de ambiente
-3. Deploy automático
-
-### Outras plataformas
-- Configure as variáveis de ambiente
-- Execute `npm run build`
-- Suba os arquivos da pasta `.next`
-
-## 🤝 Contribuição
-
-1. Fork o projeto
-2. Crie uma branch: `git checkout -b feature/nova-feature`
-3. Commit suas mudanças: `git commit -m 'Add: nova feature'`
-4. Push para a branch: `git push origin feature/nova-feature`
-5. Abra um Pull Request
+# Reinstalar dependências
+rm -rf node_modules package-lock.json
+npm install
+```
 
 ## 📄 Licença
 
-Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
-
 ---
 
-Desenvolvido com ❤️ para conectar talentos e oportunidades.
+**Desenvolvido com ❤️ para conectar talentos e oportunidades**

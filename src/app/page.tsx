@@ -1,20 +1,8 @@
 'use client'
 import Image from 'next/image';
 import Link from 'next/link';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function Home() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
-
-  // Redirecionar se já estiver logado
-  useEffect(() => {
-    if (status === 'authenticated') {
-      router.push('/dashboard');
-    }
-  }, [status, router]);
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-7xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -47,14 +35,14 @@ export default function Home() {
             {/* Descrição */}
             <p className="text-gray-700 text-base md:text-lg mb-8 leading-relaxed">
               Faça seu cadastro e preencha os campos, venha demonstrar suas capacidades e competências.{' '}
-              <Link href="/register" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">
+              <Link href="/signup" className="text-purple-600 hover:text-purple-700 font-medium transition-colors">
                 Comece agora!
               </Link>
             </p>
 
             {/* Botão CTA */}
             <div className="mb-8">
-              <Link href="/register">
+              <Link href="/signup">
                 <button className="cursor-pointer bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-purple-800 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5">
                   Cadastre-se
                 </button>

@@ -1,431 +1,43 @@
 'use client'
-import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle, User, Building, GraduationCap } from 'lucide-react';
-import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle, User, Building, GraduationCap, X } from 'lucide-react';
+import { useSignupForm, UserType, PlanType } from './_components/signup-form';
 
-type UserType = 'aluno' | 'recrutador' | 'gestor';
+export default function SignupPage() {
+    const {
+        // Estados
+        isHydrated,
+        showPassword,
+        setShowPassword,
+        showConfirmPassword,
+        setShowConfirmPassword,
+        loading,
+        currentStep,
+        showToast,
+        toastMessage,
+        toastType,
+        showPlansPopup,
+        setShowPlansPopup,
+        selectedPlanLoading,
+        formData,
+        errors,
+        isEmailValid,
+        nameRef,
+        passwordStrength,
+        strengthColors,
+        strengthTexts,
+        userTypeConfig,
+        plansConfig,
 
-interface FormData {
-    userType: UserType;
-    nome: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    cpf: string;
-    cnpj: string;
-    telefone: string;
-    endereco: string;
-    cidade: string;
-    estado: string;
-    cep: string;
-    // Campos específicos por tipo
-    curso?: string; // Aluno
-    universidade?: string; // Aluno
-    periodo?: string; // Aluno
-    nomeEmpresa?: string; // Recrutador
-    cargo?: string; // Recrutador
-    setor?: string; // Recrutador
-    nomeUniversidade?: string; // Gestor
-    departamento?: string; // Gestor
-    cargoGestor?: string; // Gestor
-}
-
-export default function Register() {
-    const { data: session, status } = useSession();
-    const router = useRouter();
-    const [showPassword, setShowPassword] = useState(false);
-    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
-    const [currentStep, setCurrentStep] = useState(1);
-    const [showToast, setShowToast] = useState(false);
-    const [toastMessage, setToastMessage] = useState('');
-    const [toastType, setToastType] = useState<'success' | 'error'>('success');
-
-    // Redirecionar se já estiver logado
-    useEffect(() => {
-        if (status === 'authenticated') {
-            router.push('/dashboard');
-        }
-    }, [status, router]);
-
-    const [formData, setFormData] = useState<FormData>({
-        userType: 'aluno',
-        nome: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        cpf: '',
-        cnpj: '',
-        telefone: '',
-        endereco: '',
-        cidade: '',
-        estado: '',
-        cep: '',
-    });
-
-    const [errors, setErrors] = useState<Partial<FormData>>({});
-    const [isEmailValid, setIsEmailValid] = useState(false);
-
-    const nomeRef = useRef<HTMLInputElement>(null);
-
-    // Auto-focus no primeiro campo
-    useEffect(() => {
-        if (nomeRef.current) {
-            nomeRef.current.focus();
-        }
-    }, []);
-
-    // Validação de email em tempo real
-    useEffect(() => {
-        const timeoutId = setTimeout(() => {
-            if (formData.email) {
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                const valid = emailRegex.test(formData.email);
-                setIsEmailValid(valid);
-                setErrors(prev => ({
-                    ...prev,
-                    email: valid ? '' : 'Por favor, insira um email válido'
-                }));
-            } else {
-                setIsEmailValid(false);
-                setErrors(prev => ({ ...prev, email: '' }));
-            }
-        }, 500);
-
-        return () => clearTimeout(timeoutId);
-    }, [formData.email]);
-
-    // Validação de senha
-    useEffect(() => {
-        if (formData.password) {
-            if (formData.password.length < 6) {
-                setErrors(prev => ({
-                    ...prev,
-                    password: 'A senha deve ter pelo menos 6 caracteres'
-                }));
-            } else {
-                setErrors(prev => ({ ...prev, password: '' }));
-            }
-        } else {
-            setErrors(prev => ({ ...prev, password: '' }));
-        }
-
-        // Validação de confirmação de senha
-        if (formData.confirmPassword) {
-            if (formData.password !== formData.confirmPassword) {
-                setErrors(prev => ({
-                    ...prev,
-                    confirmPassword: 'As senhas não coincidem'
-                }));
-            } else {
-                setErrors(prev => ({ ...prev, confirmPassword: '' }));
-            }
-        }
-    }, [formData.password, formData.confirmPassword]);
-
-    // Função para mostrar toast
-    const showToastMessage = (message: string, type: 'success' | 'error') => {
-        setToastMessage(message);
-        setToastType(type);
-        setShowToast(true);
-        setTimeout(() => {
-            setShowToast(false);
-        }, 3000);
-    };
-
-    // Calcular força da senha
-    const calculatePasswordStrength = (pass: string) => {
-        let strength = 0;
-        if (pass.length >= 6) strength++;
-        if (pass.length >= 8) strength++;
-        if (/[A-Z]/.test(pass)) strength++;
-        if (/[0-9]/.test(pass)) strength++;
-        if (/[^A-Za-z0-9]/.test(pass)) strength++;
-        return strength;
-    };
-
-    const passwordStrength = calculatePasswordStrength(formData.password);
-    const strengthColors = ['bg-red-500', 'bg-orange-500', 'bg-yellow-500', 'bg-blue-500', 'bg-green-500'];
-    const strengthTexts = ['Muito fraca', 'Fraca', 'Regular', 'Boa', 'Forte'];
-
-    // Formatação de CPF e CNPJ
-    const formatCPF = (value: string) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d{1,2})/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
-    };
-
-    const formatCNPJ = (value: string) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{2})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1.$2')
-            .replace(/(\d{3})(\d)/, '$1/$2')
-            .replace(/(\d{4})(\d{1,2})/, '$1-$2')
-            .replace(/(-\d{2})\d+?$/, '$1');
-    };
-
-    const formatPhone = (value: string) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{2})(\d)/, '($1) $2')
-            .replace(/(\d{5})(\d{4})/, '$1-$2')
-            .replace(/(-\d{4})\d+?$/, '$1');
-    };
-
-    const formatCEP = (value: string) => {
-        return value
-            .replace(/\D/g, '')
-            .replace(/(\d{5})(\d{3})/, '$1-$2')
-            .replace(/(-\d{3})\d+?$/, '$1');
-    };
-
-    // Função para detectar se é CPF ou CNPJ e formatar adequadamente
-    const formatCpfOrCnpj = (value: string) => {
-        const cleanValue = value.replace(/\D/g, '');
-
-        if (cleanValue.length <= 11) {
-            // Formatar como CPF
-            return formatCPF(value);
-        } else {
-            // Formatar como CNPJ
-            return formatCNPJ(value);
-        }
-    };
-
-    const handleInputChange = (field: keyof FormData, value: string) => {
-        let formattedValue = value;
-
-        if (field === 'cpf') {
-            if (formData.userType === 'aluno') {
-                formattedValue = formatCPF(value);
-            } else {
-                // Para recrutador e gestor, detectar automaticamente CPF ou CNPJ
-                formattedValue = formatCpfOrCnpj(value);
-                // Limpar CNPJ se estiver digitando CPF
-                if (value.replace(/\D/g, '').length <= 11) {
-                    setFormData(prev => ({ ...prev, cnpj: '' }));
-                }
-            }
-        } else if (field === 'cnpj') {
-            formattedValue = formatCNPJ(value);
-            // Limpar CPF se estiver digitando CNPJ
-            setFormData(prev => ({ ...prev, cpf: '' }));
-        } else if (field === 'telefone') {
-            formattedValue = formatPhone(value);
-        } else if (field === 'cep') {
-            formattedValue = formatCEP(value);
-        }
-
-        setFormData(prev => ({
-            ...prev,
-            [field]: formattedValue
-        }));
-    };
-
-    const handleUserTypeChange = (type: UserType) => {
-        setFormData(prev => ({
-            ...prev,
-            userType: type,
-            // Limpar campos específicos quando mudar de tipo
-            cpf: '',
-            cnpj: '',
-            curso: '',
-            universidade: '',
-            periodo: '',
-            nomeEmpresa: '',
-            cargo: '',
-            setor: '',
-            nomeUniversidade: '',
-            departamento: '',
-            cargoGestor: ''
-        }));
-        setCurrentStep(1);
-    };
-
-    const validateStep1 = () => {
-        const newErrors: Partial<FormData> = {};
-
-        if (!formData.nome.trim()) newErrors.nome = 'Nome é obrigatório';
-        if (!isEmailValid) newErrors.email = 'Email inválido';
-        if (formData.password.length < 6) newErrors.password = 'Senha deve ter pelo menos 6 caracteres';
-        if (formData.password !== formData.confirmPassword) newErrors.confirmPassword = 'Senhas não coincidem';
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const validateStep2 = () => {
-        const newErrors: Partial<FormData> = {};
-
-        // Validação de CPF ou CNPJ baseado no tipo de usuário
-        if (formData.userType === 'aluno') {
-            // Aluno: apenas CPF
-            if (!formData.cpf || formData.cpf.length < 14) {
-                newErrors.cpf = 'CPF é obrigatório e deve estar completo';
-            }
-        } else {
-            // Recrutador e Gestor: CPF ou CNPJ
-            const hasCpf = formData.cpf && formData.cpf.length >= 14;
-            const hasCnpj = formData.cnpj && formData.cnpj.length >= 18;
-
-            if (!hasCpf && !hasCnpj) {
-                newErrors.cpf = 'CPF ou CNPJ é obrigatório';
-            }
-        }
-
-        // Telefone obrigatório
-        if (!formData.telefone || formData.telefone.length < 14) {
-            newErrors.telefone = 'Telefone é obrigatório';
-        }
-
-        // Endereço obrigatório
-        if (!formData.endereco.trim()) {
-            newErrors.endereco = 'Endereço é obrigatório';
-        }
-
-        // Cidade obrigatória
-        if (!formData.cidade.trim()) {
-            newErrors.cidade = 'Cidade é obrigatória';
-        }
-
-        // Estado obrigatório
-        if (!formData.estado.trim()) {
-            newErrors.estado = 'Estado é obrigatório';
-        }
-
-        // CEP obrigatório
-        if (!formData.cep || formData.cep.length < 9) {
-            newErrors.cep = 'CEP é obrigatório';
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const validateStep3 = () => {
-        const newErrors: Partial<FormData> = {};
-
-        switch (formData.userType) {
-            case 'aluno':
-                if (!formData.curso?.trim()) {
-                    newErrors.curso = 'Curso é obrigatório';
-                }
-                if (!formData.universidade?.trim()) {
-                    newErrors.universidade = 'Universidade é obrigatória';
-                }
-                if (!formData.periodo?.trim()) {
-                    newErrors.periodo = 'Período é obrigatório';
-                }
-                break;
-
-            case 'recrutador':
-                if (!formData.nomeEmpresa?.trim()) {
-                    newErrors.nomeEmpresa = 'Nome da empresa é obrigatório';
-                }
-                if (!formData.cargo?.trim()) {
-                    newErrors.cargo = 'Cargo é obrigatório';
-                }
-                if (!formData.setor?.trim()) {
-                    newErrors.setor = 'Setor é obrigatório';
-                }
-                break;
-
-            case 'gestor':
-                if (!formData.nomeUniversidade?.trim()) {
-                    newErrors.nomeUniversidade = 'Nome da universidade é obrigatório';
-                }
-                if (!formData.departamento?.trim()) {
-                    newErrors.departamento = 'Departamento é obrigatório';
-                }
-                if (!formData.cargoGestor?.trim()) {
-                    newErrors.cargoGestor = 'Cargo é obrigatório';
-                }
-                break;
-        }
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
-    };
-
-    const nextStep = () => {
-        if (currentStep === 1 && validateStep1()) {
-            setCurrentStep(2);
-        } else if (currentStep === 2 && validateStep2()) {
-            setCurrentStep(3);
-        }
-    };
-
-    const prevStep = () => {
-        if (currentStep > 1) {
-            setCurrentStep(currentStep - 1);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Validar etapa 3 antes de enviar
-        if (!validateStep3()) {
-            showToastMessage('Por favor, preencha todos os campos obrigatórios', 'error');
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            const response = await fetch('/api/register', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(formData),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showToastMessage('Conta criada com sucesso!', 'success');
-                // Redirecionar para login após 2 segundos
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-            } else {
-                showToastMessage(data.error || 'Erro ao criar conta', 'error');
-            }
-        } catch (error) {
-            showToastMessage('Erro ao criar conta. Tente novamente.', 'error');
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const userTypeConfig = {
-        aluno: {
-            icon: User,
-            title: 'Aluno',
-            description: 'Buscar oportunidades de estágio e emprego',
-            color: 'from-blue-600 to-blue-700'
-        },
-        recrutador: {
-            icon: Building,
-            title: 'Recrutador',
-            description: 'Encontrar talentos para sua empresa',
-            color: 'from-green-600 to-green-700'
-        },
-        gestor: {
-            icon: GraduationCap,
-            title: 'Gestor Universitário',
-            description: 'Gerenciar parcerias e oportunidades',
-            color: 'from-purple-600 to-purple-700'
-        }
-    };
+        // Handlers
+        handleInputChange,
+        handleUserTypeChange,
+        handleSubmit,
+        handlePlanSelection,
+        nextStep,
+        prevStep,
+    } = useSignupForm();
 
     const renderSpecificFields = () => {
         switch (formData.userType) {
@@ -505,8 +117,15 @@ export default function Register() {
                                 value={formData.nomeEmpresa || ''}
                                 onChange={(e) => handleInputChange('nomeEmpresa', e.target.value)}
                                 placeholder="Nome da empresa"
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.nomeEmpresa ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                                    }`}
                             />
+                            {errors.nomeEmpresa && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.nomeEmpresa}
+                                </p>
+                            )}
                         </div>
                         <div className="flex flex-col items-center gap-2 w-full max-w-md">
                             <label className="text-gray-700 font-semibold">Cargo</label>
@@ -515,15 +134,23 @@ export default function Register() {
                                 value={formData.cargo || ''}
                                 onChange={(e) => handleInputChange('cargo', e.target.value)}
                                 placeholder="Seu cargo na empresa"
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cargo ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                                    }`}
                             />
+                            {errors.cargo && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.cargo}
+                                </p>
+                            )}
                         </div>
                         <div className="flex flex-col items-center gap-2 w-full max-w-md">
                             <label className="text-gray-700 font-semibold">Setor</label>
                             <select
                                 value={formData.setor || ''}
                                 onChange={(e) => handleInputChange('setor', e.target.value)}
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.setor ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-green-500'
+                                    }`}
                             >
                                 <option value="">Selecione o setor</option>
                                 <option value="tecnologia">Tecnologia</option>
@@ -535,6 +162,12 @@ export default function Register() {
                                 <option value="servicos">Serviços</option>
                                 <option value="outros">Outros</option>
                             </select>
+                            {errors.setor && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.setor}
+                                </p>
+                            )}
                         </div>
                     </>
                 );
@@ -548,8 +181,15 @@ export default function Register() {
                                 value={formData.nomeUniversidade || ''}
                                 onChange={(e) => handleInputChange('nomeUniversidade', e.target.value)}
                                 placeholder="Nome da universidade"
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.nomeUniversidade ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                                    }`}
                             />
+                            {errors.nomeUniversidade && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.nomeUniversidade}
+                                </p>
+                            )}
                         </div>
                         <div className="flex flex-col items-center gap-2 w-full max-w-md">
                             <label className="text-gray-700 font-semibold">Departamento</label>
@@ -558,8 +198,15 @@ export default function Register() {
                                 value={formData.departamento || ''}
                                 onChange={(e) => handleInputChange('departamento', e.target.value)}
                                 placeholder="Departamento ou área"
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.departamento ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                                    }`}
                             />
+                            {errors.departamento && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.departamento}
+                                </p>
+                            )}
                         </div>
                         <div className="flex flex-col items-center gap-2 w-full max-w-md">
                             <label className="text-gray-700 font-semibold">Cargo</label>
@@ -568,13 +215,32 @@ export default function Register() {
                                 value={formData.cargoGestor || ''}
                                 onChange={(e) => handleInputChange('cargoGestor', e.target.value)}
                                 placeholder="Seu cargo na universidade"
-                                className="w-full text-black px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 transition-all duration-300"
+                                className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cargoGestor ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                                    }`}
                             />
+                            {errors.cargoGestor && (
+                                <p className="text-red-500 text-sm flex items-center gap-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {errors.cargoGestor}
+                                </p>
+                            )}
                         </div>
                     </>
                 );
         }
     };
+
+    // Aguardar hidratação para evitar problemas de SSR
+    if (!isHydrated) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto mb-4"></div>
+                    <p className="text-gray-600">Carregando...</p>
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
@@ -595,16 +261,19 @@ export default function Register() {
                 <div className="p-8 md:p-10 lg:p-12">
                     {/* Logo */}
                     <div className="flex items-center justify-center mb-6">
-                        <div>
+                        <Link
+                            href="/"
+                            className="transition-all duration-300 hover:scale-105 hover:opacity-80 cursor-pointer"
+                        >
                             <Image
                                 src="/logo.png"
                                 alt="Needuk"
                                 width={120}
                                 height={120}
-                                className="w-24 h-24 md:w-44 md:h-32 object-contain transition-transform duration-300 hover:scale-105"
+                                className="w-24 h-24 md:w-44 md:h-32 object-contain"
                                 priority
                             />
-                        </div>
+                        </Link>
                     </div>
 
                     {/* Título Principal */}
@@ -622,7 +291,7 @@ export default function Register() {
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                         {(Object.keys(userTypeConfig) as UserType[]).map((type) => {
                             const config = userTypeConfig[type];
-                            const Icon = config.icon;
+                            const IconComponent = type === 'aluno' ? User : type === 'recrutador' ? Building : GraduationCap;
                             const isSelected = formData.userType === type;
 
                             return (
@@ -634,7 +303,7 @@ export default function Register() {
                                         : 'border-gray-300 hover:border-gray-400 bg-white'
                                         }`}
                                 >
-                                    <Icon className={`h-8 w-8 mx-auto mb-2 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
+                                    <IconComponent className={`h-8 w-8 mx-auto mb-2 ${isSelected ? 'text-white' : 'text-gray-600'}`} />
                                     <h3 className={`font-semibold ${isSelected ? 'text-white' : 'text-gray-900'}`}>
                                         {config.title}
                                     </h3>
@@ -676,10 +345,10 @@ export default function Register() {
                                 <div className="flex flex-col items-center gap-2 w-full max-w-md">
                                     <label className="text-gray-700 font-semibold">Nome Completo</label>
                                     <input
-                                        ref={nomeRef}
+                                        ref={nameRef}
                                         type="text"
-                                        value={formData.nome}
-                                        onChange={(e) => handleInputChange('nome', e.target.value)}
+                                        value={formData.name}
+                                        onChange={(e) => handleInputChange('name', e.target.value)}
                                         placeholder="Seu nome completo"
                                         className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.nome ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
                                             }`}
@@ -826,7 +495,7 @@ export default function Register() {
                                     </label>
                                     <input
                                         type="text"
-                                        value={formData.cpf}
+                                        value={formData.cpf || formData.cnpj}
                                         onChange={(e) => handleInputChange('cpf', e.target.value)}
                                         placeholder={
                                             formData.userType === 'aluno'
@@ -846,6 +515,12 @@ export default function Register() {
                                         <p className="text-red-500 text-sm flex items-center gap-1">
                                             <AlertCircle className="h-4 w-4" />
                                             {errors.cpf}
+                                        </p>
+                                    )}
+                                    {errors.cnpj && (
+                                        <p className="text-red-500 text-sm flex items-center gap-1">
+                                            <AlertCircle className="h-4 w-4" />
+                                            {errors.cnpj}
                                         </p>
                                     )}
                                 </div>
@@ -1020,6 +695,91 @@ export default function Register() {
                     </div>
                 </div>
             </div>
+
+            {/* Popup de Planos */}
+            {showPlansPopup && (
+                <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-gray-100 rounded-2xl shadow-2xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
+                        <div className="p-8">
+                            {/* Header do Popup */}
+                            <div className="flex justify-between items-center mb-6">
+                                <div>
+                                    <h2 className="text-3xl font-bold text-gray-900">Faça o Upgrade!</h2>
+                                    <p className="text-gray-600 mt-2">Escolha o plano ideal para você</p>
+                                </div>
+                                <button
+                                    onClick={() => setShowPlansPopup(false)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X className="h-6 w-6" />
+                                </button>
+                            </div>
+
+                            {/* Grid de Planos */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                                {(Object.keys(plansConfig) as PlanType[]).map((planKey) => {
+                                    const plan = plansConfig[planKey];
+
+                                    return (
+                                        <div
+                                            key={planKey}
+                                            className={`relative rounded-xl p-6 text-white ${plan.bgColor} hover:scale-105 transition-all duration-300 cursor-pointer`}
+                                            onClick={() => handlePlanSelection(planKey)}
+                                        >
+                                            {/* Badge do plano */}
+                                            <div className="text-center mb-4">
+                                                <h3 className="text-xl font-bold">{plan.title}</h3>
+                                                <p className="text-2xl font-bold mt-2">{plan.price}</p>
+                                            </div>
+
+                                            {/* Descrição */}
+                                            <div className="text-sm space-y-2 mb-6">
+                                                {plan.description.split('\n').map((line, index) => (
+                                                    <div key={index} className="flex items-center">
+                                                        {line.startsWith('+') ? (
+                                                            <>
+                                                                <span className="text-lg mr-2">+</span>
+                                                                <span>{line.substring(1).trim()}</span>
+                                                            </>
+                                                        ) : (
+                                                            <span>{line}</span>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+
+                                            {/* Botão de seleção */}
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handlePlanSelection(planKey);
+                                                }}
+                                                disabled={selectedPlanLoading !== null}
+                                                className="w-full bg-opacity-20 hover:bg-opacity-30 text-white font-semibold py-2 px-3 rounded-lg transition-all duration-300 disabled:opacity-50 text-sm">
+                                                {selectedPlanLoading === planKey ? 'Processando...' : ''}
+                                            </button>
+
+                                            {/* Círculo de seleção */}
+                                            <div className="absolute bottom-4 right-4">
+                                                <div className="w-6 h-6 border-2 border-white rounded-full flex items-center justify-center">
+                                                    <div className="w-3 h-3 bg-white rounded-full"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Nota sobre plano Free */}
+                            <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+                                <p className="text-sm text-blue-800">
+                                    <strong>Nota:</strong> Caso escolha o plano gratuito, você poderá atualizar para um plano pago posteriormente.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

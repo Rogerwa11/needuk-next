@@ -1,9 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  experimental: {
-    optimizePackageImports: ['lucide-react']
-  }
+  outputFileTracingRoot: __dirname,
+  /* config options here */
 };
 
 export default nextConfig;
