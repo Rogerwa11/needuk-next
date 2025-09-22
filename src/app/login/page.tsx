@@ -3,8 +3,13 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
 import { useLoginForm } from './_components/login-form';
+import { useAuthRedirect } from '@/hooks/useAuth';
+import { AuthLoadingScreen } from '@/app/_components/AuthLoadingScreen';
+import { Logo } from '@/app/_components/logo';
 
 export default function LoginPage() {
+    const { loading: authLoading } = useAuthRedirect('/dashboard');
+
     const {
         // Estados
         showPassword,
@@ -26,6 +31,10 @@ export default function LoginPage() {
         handlePasswordChange,
     } = useLoginForm();
 
+    if (authLoading) {
+        return <AuthLoadingScreen />;
+    }
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
             {/* Toast Notification */}
@@ -44,21 +53,7 @@ export default function LoginPage() {
             <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-8 md:p-10">
                     {/* Logo */}
-                    <div className="flex items-center justify-center mb-8">
-                        <Link
-                            href="/"
-                            className="transition-all duration-300 hover:scale-105 hover:opacity-80 cursor-pointer"
-                        >
-                            <Image
-                                src="/logo.png"
-                                alt="Needuk"
-                                width={120}
-                                height={120}
-                                className="w-24 h-24 md:w-32 md:h-32 object-contain"
-                                priority
-                            />
-                        </Link>
-                    </div>
+                    <Logo />
 
                     {/* Título Principal */}
                     <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center">

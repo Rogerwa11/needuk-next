@@ -3,8 +3,15 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { Eye, EyeOff, CheckCircle, XCircle, AlertCircle, User, Building, GraduationCap, X } from 'lucide-react';
 import { useSignupForm, UserType, PlanType } from './_components/signup-form';
+import { useAuthRedirect } from '@/hooks/useAuth';
+import { AuthLoadingScreen } from '@/app/_components/AuthLoadingScreen';
+import { Logo } from '@/app/_components/logo';
 
 export default function SignupPage() {
+
+    // Hook para redirecionar se já estiver logado
+    const { loading: authLoading } = useAuthRedirect('/dashboard');
+
     const {
         // Estados
         isHydrated,
@@ -38,6 +45,11 @@ export default function SignupPage() {
         nextStep,
         prevStep,
     } = useSignupForm();
+
+    // Mostrar loading enquanto verifica autenticação
+    if (authLoading) {
+        return <AuthLoadingScreen />;
+    }
 
     const renderSpecificFields = () => {
         switch (formData.userType) {
@@ -260,21 +272,7 @@ export default function SignupPage() {
             <div className="max-w-7xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                 <div className="p-8 md:p-10 lg:p-12">
                     {/* Logo */}
-                    <div className="flex items-center justify-center mb-6">
-                        <Link
-                            href="/"
-                            className="transition-all duration-300 hover:scale-105 hover:opacity-80 cursor-pointer"
-                        >
-                            <Image
-                                src="/logo.png"
-                                alt="Needuk"
-                                width={120}
-                                height={120}
-                                className="w-24 h-24 md:w-44 md:h-32 object-contain"
-                                priority
-                            />
-                        </Link>
-                    </div>
+                    <Logo />
 
                     {/* Título Principal */}
                     <h1 className="text-2xl md:text-3xl font-bold mb-2 text-center">

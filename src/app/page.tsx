@@ -1,8 +1,20 @@
 'use client'
 import Image from 'next/image';
 import Link from 'next/link';
+import { useAuthRedirect } from '@/hooks/useAuth';
+import { AuthLoadingScreen } from '@/app/_components/AuthLoadingScreen';
+import { Logo } from '@/app/_components/logo';
 
 export default function Home() {
+
+  // Hook para redirecionar se já estiver logado
+  const { loading: authLoading } = useAuthRedirect('/dashboard');
+
+  // Mostrar loading enquanto verifica autenticação
+  if (authLoading) {
+    return <AuthLoadingScreen />;
+  }
+
   return (
     <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
       <div className="max-w-7xl w-full bg-white rounded-2xl shadow-xl overflow-hidden">
@@ -10,18 +22,7 @@ export default function Home() {
           {/* Coluna Esquerda - Conteúdo */}
           <div className="p-8 md:p-12 lg:p-16 flex flex-col justify-center">
             {/* Logo */}
-            <div className="flex items-center mb-6">
-              <div>
-                <Image
-                  src="/logo.png"
-                  alt="Needuk"
-                  width={120}
-                  height={120}
-                  className="w-24 h-24 md:w-44 md:h-32 object-contain transition-transform duration-300 hover:scale-105"
-                  priority
-                />
-              </div>
-            </div>
+            <Logo />
 
             {/* Título Principal */}
             <h1 className="text-black text-3xl md:text-4xl lg:text-5xl font-bold mb-6 leading-tight">

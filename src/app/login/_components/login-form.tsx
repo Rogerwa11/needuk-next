@@ -3,7 +3,6 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { authClient } from '@/lib/auth-client';
 
-// Schema de validação para login
 const loginSchema = z.object({
     email: z.string().email('Email inválido'),
     password: z.string().min(6, 'Senha deve ter pelo menos 6 caracteres'),
@@ -28,14 +27,12 @@ export const useLoginForm = () => {
 
     const emailRef = useRef<HTMLInputElement>(null);
 
-    // Auto-focus no email ao carregar
     useEffect(() => {
         if (emailRef.current) {
             emailRef.current.focus();
         }
     }, []);
 
-    // Validação de email em tempo real com debounce
     useEffect(() => {
         const timeoutId = setTimeout(() => {
             if (email) {
@@ -59,8 +56,8 @@ export const useLoginForm = () => {
     // Validação de senha
     useEffect(() => {
         if (password) {
-            if (password.length < 6) {
-                setErrors(prev => ({ ...prev, password: 'A senha deve ter pelo menos 6 caracteres' }));
+            if (password.length < 8) {
+                setErrors(prev => ({ ...prev, password: 'A senha deve ter pelo menos 8 caracteres' }));
             } else {
                 setErrors(prev => ({ ...prev, password: '' }));
             }
@@ -85,7 +82,6 @@ export const useLoginForm = () => {
         // Validação com Zod
         try {
             loginSchema.parse({ email, password });
-            // Limpar erros se validação passou
             setErrors({});
         } catch (error) {
             if (error instanceof z.ZodError) {
@@ -102,34 +98,26 @@ export const useLoginForm = () => {
 
         setLoading(true);
 
-        try {
-            const { } = await authClient.signIn.email({
-                email: email.toLowerCase().trim(),
-                password: password,
-                callbackURL: '/dashboard'
+        await authClient.signIn.email({
+            email: email.toLowerCase().trim(),
+            password: password,
+            callbackURL: '/dashboard'
+        }, {
+            onSuccess: (ctx) => {
+                showToastMessage('Login realizado com sucesso!', 'success');
+                setTimeout(() => {
+                    router.push('/dashboard');
+                }, 1000);
             },
-                {
-                    onSuccess: (ctx) => {
-                        showToastMessage('Login realizado com sucesso!', 'success');
-                        setTimeout(() => {
-                            router.push('/dashboard');
-                        }, 1000);
-                    },
-                    onError: (ctx) => {
-                        if (ctx.error.code === 'INVALID_EMAIL_OR_PASSWORD') {
-                            showToastMessage('Email ou senha inválidos. Tente novamente.', 'error');
-                        } else {
-                            showToastMessage('Erro ao fazer login. Tente novamente.', 'error');
-                        }
-                        //console.error('Erro no login:', ctx.error);
-                    }
-                })
-        } catch (error) {
-            console.error('Erro no login:', error);
-            showToastMessage('Erro ao fazer login. Tente novamente.', 'error');
-        } finally {
-            setLoading(false);
-        }
+            onError: (ctx) => {
+                if (ctx.error.code === 'INVALID_EMAIL_OR_PASSWORD') {
+                    showToastMessage('Email ou senha inválidos. Tente novamente.', 'error');
+                } else {
+                    showToastMessage('Erro ao fazer login. Tente novamente.', 'error');
+                }
+            }
+        })
+        setLoading(false);
     };
 
     // Navegação com Enter
