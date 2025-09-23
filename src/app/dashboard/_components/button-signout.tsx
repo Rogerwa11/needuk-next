@@ -2,8 +2,13 @@
 
 import { useRouter } from 'next/navigation'
 import { authClient } from '@/lib/auth-client'
+import { LogOut } from 'lucide-react'
 
-export const ButtonSignout = (): React.JSX.Element => {
+interface ButtonSignoutProps {
+    variant?: 'default' | 'dropdown';
+}
+
+export const ButtonSignout = ({ variant = 'default' }: ButtonSignoutProps): React.JSX.Element => {
     const router = useRouter()
 
     async function handleSignout() {
@@ -14,6 +19,18 @@ export const ButtonSignout = (): React.JSX.Element => {
                 }
             }
         });
+    }
+
+    if (variant === 'dropdown') {
+        return (
+            <button
+                onClick={handleSignout}
+                className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+            >
+                <LogOut className="w-4 h-4 mr-3" />
+                Sair
+            </button>
+        );
     }
 
     return (

@@ -98,6 +98,8 @@ export const useLoginForm = () => {
 
         setLoading(true);
 
+        //await authClient.revokeOtherSessions()
+
         await authClient.signIn.email({
             email: email.toLowerCase().trim(),
             password: password,
