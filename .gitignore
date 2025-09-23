@@ -17,10 +17,8 @@ coverage/
 # Next.js
 .next/
 out/
-build/
-dist/
 
-# Production
+# Production builds
 build/
 dist/
 
@@ -46,15 +44,7 @@ pids
 *.pid.lock
 
 # Coverage directory used by tools like istanbul
-coverage/
 *.lcov
-
-# nyc test coverage
-.nyc_output
-
-# Dependency directories
-node_modules/
-jspm_packages/
 
 # TypeScript cache
 *.tsbuildinfo
@@ -87,17 +77,11 @@ jspm_packages/
 .cache
 .parcel-cache
 
-# Next.js build output
-.next
-out
-
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
-public
 
 # Storybook build outputs
 .out
@@ -130,19 +114,13 @@ Thumbs.db
 # Turbo
 .turbo
 
-# Prisma
-/src/generated/prisma
+# Prisma (generated files)
+src/generated/prisma/
 
 # Better Auth
 .better-auth
 
-# Local development
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Database
+# Database files
 *.db
 *.sqlite
 *.sqlite3
@@ -157,19 +135,14 @@ yarn.lock
 pnpm-lock.yaml
 
 # IDE
-.vscode/
-.idea/
 *.swp
 *.swo
 
 # MacOS
-.DS_Store
 .AppleDouble
 .LSOverride
 
 # Windows
-Thumbs.db
-ehthumbs.db
 Desktop.ini
 
 # Linux
