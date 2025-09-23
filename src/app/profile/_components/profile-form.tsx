@@ -238,7 +238,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.curso}
                                     onChange={(e) => handleInputChange('curso', e.target.value)}
                                     placeholder="Ex: Engenharia de Software"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -249,7 +249,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.universidade}
                                     onChange={(e) => handleInputChange('universidade', e.target.value)}
                                     placeholder="Ex: Universidade Federal"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -260,7 +260,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.periodo}
                                     onChange={(e) => handleInputChange('periodo', e.target.value)}
                                     placeholder="Ex: 5º período"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
                         </div>
@@ -283,7 +283,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.nomeEmpresa}
                                     onChange={(e) => handleInputChange('nomeEmpresa', e.target.value)}
                                     placeholder="Ex: Tech Solutions Ltda"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -294,7 +294,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.cargo}
                                     onChange={(e) => handleInputChange('cargo', e.target.value)}
                                     placeholder="Ex: Recrutador Sênior"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -305,7 +305,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.setor}
                                     onChange={(e) => handleInputChange('setor', e.target.value)}
                                     placeholder="Ex: Tecnologia da Informação"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
                         </div>
@@ -328,7 +328,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.nomeUniversidade}
                                     onChange={(e) => handleInputChange('nomeUniversidade', e.target.value)}
                                     placeholder="Ex: Universidade Federal"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -339,7 +339,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.departamento}
                                     onChange={(e) => handleInputChange('departamento', e.target.value)}
                                     placeholder="Ex: Departamento de TI"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
 
@@ -350,7 +350,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.cargoGestor}
                                     onChange={(e) => handleInputChange('cargoGestor', e.target.value)}
                                     placeholder="Ex: Coordenador"
-                                    className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
                                 />
                             </div>
                         </div>
@@ -441,7 +441,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                         value={formData.name}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         placeholder="Seu nome completo"
-                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.name
+                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.name
                                             ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-purple-500'
                                             }`}
@@ -478,7 +478,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                         value={formData.telefone}
                                         onChange={(e) => handleInputChange('telefone', e.target.value)}
                                         placeholder="(11) 99999-9999"
-                                        className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.telefone
+                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.telefone
                                             ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-purple-500'
                                             }`}
@@ -491,12 +491,12 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     )}
                                 </div>
 
-                                {user.userType === 'aluno' && (
+                                {user.cpf && (
                                     <div className="space-y-2">
                                         <label className="text-gray-700 font-semibold block">CPF</label>
                                         <input
                                             type="text"
-                                            value={user.cpf || ''}
+                                            value={user.cpf}
                                             readOnly
                                             className="w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                         />
@@ -504,12 +504,12 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     </div>
                                 )}
 
-                                {(user.userType === 'recrutador' || user.userType === 'gestor') && (
+                                {user.cnpj && (
                                     <div className="space-y-2">
                                         <label className="text-gray-700 font-semibold block">CNPJ</label>
                                         <input
                                             type="text"
-                                            value={user.cnpj || ''}
+                                            value={user.cnpj}
                                             readOnly
                                             className="w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                         />
@@ -536,7 +536,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                 value={formData.endereco}
                                 onChange={(e) => handleInputChange('endereco', e.target.value)}
                                 placeholder="Rua, número, bairro"
-                                className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.endereco
+                                className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.endereco
                                     ? 'border-red-500 focus:ring-red-500'
                                     : 'border-gray-300 focus:ring-purple-500'
                                     }`}
@@ -557,7 +557,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.cidade}
                                     onChange={(e) => handleInputChange('cidade', e.target.value)}
                                     placeholder="Sua cidade"
-                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cidade
+                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cidade
                                         ? 'border-red-500 focus:ring-red-500'
                                         : 'border-gray-300 focus:ring-purple-500'
                                         }`}
@@ -578,7 +578,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     onChange={(e) => handleInputChange('estado', e.target.value)}
                                     placeholder="UF"
                                     maxLength={2}
-                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.estado
+                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.estado
                                         ? 'border-red-500 focus:ring-red-500'
                                         : 'border-gray-300 focus:ring-purple-500'
                                         }`}
@@ -598,7 +598,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.cep}
                                     onChange={(e) => handleInputChange('cep', e.target.value)}
                                     placeholder="00000-000"
-                                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cep
+                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cep
                                         ? 'border-red-500 focus:ring-red-500'
                                         : 'border-gray-300 focus:ring-purple-500'
                                         }`}

@@ -107,6 +107,7 @@ export const useLoginForm = () => {
         }, {
             onSuccess: (ctx) => {
                 showToastMessage('Login realizado com sucesso!', 'success');
+                authClient.revokeOtherSessions();
                 setTimeout(() => {
                     router.push('/dashboard');
                 }, 1000);
