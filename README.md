@@ -1,6 +1,6 @@
 # NeedUK - Plataforma de Conexão Profissional
 
-Uma plataforma completa para conectar estudantes, empresas e universidades, facilitando oportunidades de estágio, emprego e parcerias educacionais através de um sistema avançado de atividades colaborativas.
+Micro-SaaS para conectar estudantes, empresas e universidades, facilitando oportunidades de estágio, emprego e parcerias educacionais através de um sistema avançado de atividades colaborativas.
 
 ## ✨ Funcionalidades Principais
 
