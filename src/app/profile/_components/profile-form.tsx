@@ -18,7 +18,8 @@ import {
     Save,
     Loader,
     Camera,
-    Upload
+    Upload,
+    Award
 } from 'lucide-react';
 
 // Schema para validação dos dados de perfil
@@ -55,6 +56,9 @@ interface ProfileFormProps {
         estado: string;
         cep: string;
         userType: string;
+        goldMedals?: number;
+        silverMedals?: number;
+        bronzeMedals?: number;
         cpf?: string | null;
         cnpj?: string | null;
         curso?: string | null;
@@ -392,7 +396,8 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                 <Camera className="w-4 h-4" />
                                 Foto de Perfil
                             </label>
-                            <div className="flex flex-col items-center space-y-3">
+                            <div className="text-black flex flex-col items-center space-y-3">
+                                -MANUTENÇÃO-
                                 <div className="relative">
                                     <div className="w-32 h-32 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden border-4 border-white shadow-lg">
                                         {imagePreview ? (
@@ -411,7 +416,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                             <User className="w-16 h-16 text-white" />
                                         )}
                                     </div>
-                                    <label
+                                    {/* <label
                                         htmlFor="image-upload"
                                         className="absolute bottom-0 right-0 bg-gradient-to-r from-purple-600 to-pink-600 text-white p-2 rounded-full cursor-pointer hover:from-purple-700 hover:to-pink-700 transition-colors shadow-lg"
                                     >
@@ -423,12 +428,57 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                         accept="image/*"
                                         onChange={handleImageChange}
                                         className="hidden"
-                                    />
+                                    /> */}
                                 </div>
                                 <p className="text-xs text-gray-500 text-center">
                                     PNG, JPG até 5MB
                                 </p>
                             </div>
+
+                            {/* Medalhas (apenas para alunos) */}
+                            {user.userType === 'aluno' && (
+                                <div className="space-y-2 w-full">
+                                    <label className="text-gray-700 font-semibold flex items-center gap-2 justify-center">
+                                        <Award className="w-4 h-4" />
+                                        Medalhas
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-2 w-full max-w-xs">
+                                        {/* Medalha de Ouro */}
+                                        <div className="px-2 py-2 border rounded-lg bg-gradient-to-r from-yellow-50 to-yellow-100 border-yellow-200 text-center">
+                                            <div className="text-xl mb-1">🥇</div>
+                                            <div className="text-sm font-bold text-yellow-800">
+                                                {user.goldMedals || 0}
+                                            </div>
+                                            <div className="text-xs text-yellow-600">
+                                                Ouro
+                                            </div>
+                                        </div>
+
+                                        {/* Medalha de Prata */}
+                                        <div className="px-2 py-2 border rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 border-gray-200 text-center">
+                                            <div className="text-xl mb-1">🥈</div>
+                                            <div className="text-sm font-bold text-gray-800">
+                                                {user.silverMedals || 0}
+                                            </div>
+                                            <div className="text-xs text-gray-600">
+                                                Prata
+                                            </div>
+                                        </div>
+
+                                        {/* Medalha de Bronze */}
+                                        <div className="px-2 py-2 border rounded-lg bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200 text-center">
+                                            <div className="text-xl mb-1">🥉</div>
+                                            <div className="text-sm font-bold text-orange-800">
+                                                {user.bronzeMedals || 0}
+                                            </div>
+                                            <div className="text-xs text-orange-600">
+                                                Bronze
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-gray-500 text-center">Medalhas por participação e desempenho</p>
+                                </div>
+                            )}
                         </div>
 
                         {/* Campos de Texto */}
@@ -495,9 +545,9 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     <div className="space-y-2">
                                         <label className="text-gray-700 font-semibold block">CPF</label>
                                         <input
-                                            type="text"
+                                            type="cpf"
                                             value={user.cpf}
-                                            readOnly
+                                            disabled
                                             className="w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                         />
                                         <p className="text-xs text-gray-500">O CPF não pode ser alterado</p>
@@ -508,14 +558,16 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     <div className="space-y-2">
                                         <label className="text-gray-700 font-semibold block">CNPJ</label>
                                         <input
-                                            type="text"
+                                            type="cnpj"
                                             value={user.cnpj}
-                                            readOnly
+                                            disabled
                                             className="w-full px-4 py-3 border rounded-lg bg-gray-50 text-gray-500 cursor-not-allowed"
                                         />
                                         <p className="text-xs text-gray-500">O CNPJ não pode ser alterado</p>
                                     </div>
                                 )}
+
+
                             </div>
                         </div>
                     </div>

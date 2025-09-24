@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation'
 import { DashboardLayout } from '@/app/dashboard/_components'
 import { ProfileForm } from './_components'
+import { prisma } from '@/lib/prisma'
 
 export default async function ProfilePage() {
     const session = await auth.api.getSession({
@@ -10,6 +11,43 @@ export default async function ProfilePage() {
     })
 
     if (!session) {
+        redirect('/')
+    }
+
+    // Buscar dados completos do usuário incluindo medalhas
+    const userData = await prisma.user.findUnique({
+        where: { id: session.user.id },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            emailVerified: true,
+            image: true,
+            userType: true,
+            cpf: true,
+            cnpj: true,
+            telefone: true,
+            endereco: true,
+            cidade: true,
+            estado: true,
+            cep: true,
+            plan: true,
+            goldMedals: true,
+            silverMedals: true,
+            bronzeMedals: true,
+            curso: true,
+            universidade: true,
+            periodo: true,
+            nomeEmpresa: true,
+            cargo: true,
+            setor: true,
+            nomeUniversidade: true,
+            departamento: true,
+            cargoGestor: true,
+        }
+    })
+
+    if (!userData) {
         redirect('/')
     }
 
@@ -28,7 +66,7 @@ export default async function ProfilePage() {
                     </div>
 
                     {/* Formulário de Perfil */}
-                    <ProfileForm user={session.user} />
+                    <ProfileForm user={userData} />
                 </div>
             </div>
         </DashboardLayout>

@@ -1,15 +1,51 @@
 # NeedUK - Plataforma de Conexão Profissional
 
-Uma plataforma completa para conectar estudantes, empresas e universidades, facilitando oportunidades de estágio, emprego e parcerias educacionais.
+Uma plataforma completa para conectar estudantes, empresas e universidades, facilitando oportunidades de estágio, emprego e parcerias educacionais através de um sistema avançado de atividades colaborativas.
 
-## ✨ Funcionalidades
+## ✨ Funcionalidades Principais
 
-- 🔐 **Sistema de Autenticação Seguro** - Login/Registro com múltiplos tipos de usuário
-- 👤 **Perfis Completos** - Gestão de perfil com foto, dados pessoais e informações específicas
-- 📊 **Dashboard Personalizado** - Interface adaptada por tipo de usuário
-- 📱 **Design Responsivo** - Experiência otimizada para desktop e mobile
-- 🖼️ **Upload de Imagens** - Sistema de upload de fotos de perfil
-- 🎯 **Sistema de Planos** - Estrutura preparada para planos premium
+### 🔐 **Sistema de Autenticação Seguro**
+- Login/Registro com múltiplos tipos de usuário
+- Sessões seguras com JWT
+- Proteção de rotas baseada em autenticação
+- Redirecionamentos inteligentes
+
+### 👤 **Gestão de Perfis Completa**
+- Perfis personalizados por tipo de usuário (Aluno/Recrutador/Gestor)
+- Upload de fotos de perfil (MANUTENÇÃO)
+- Dados pessoais e profissionais completos
+- Sistema de medalhas e conquistas
+
+### 📊 **Dashboard Personalizado**
+- Interface adaptada por tipo de usuário
+- Navegação responsiva com sidebar
+- Sistema de notificações em tempo real
+- Estatísticas e métricas (em desenvolvimento)
+
+### 🏆 **Sistema de Medalhas**
+- Medalhas de Ouro, Prata e Bronze
+- Concessão automática e manual
+- Contadores permanentes no perfil
+- Notificações de conquistas
+
+### 📋 **Sistema de Atividades Colaborativas**
+- **Criação de Atividades**: Projetos, tarefas e iniciativas
+- **Gestão de Participantes**: Convites por email, aceitação/rejeição
+- **Sistema de Liderança**: Transferência de liderança entre participantes
+- **Observações**: Comentários e progresso das atividades
+- **Links Úteis**: Compartilhamento de recursos relacionados
+- **Permissões Hierárquicas**: Líder vs Participantes
+
+### 🔔 **Sistema de Notificações**
+- Notificações em tempo real
+- Tipos: convites, medalhas, atualizações de atividades
+- Marcação de lidas/não lidas
+- Limpeza automática (1h após leitura)
+
+### 📱 **Design Totalmente Responsivo**
+- Experiência otimizada para desktop, tablet e mobile
+- Menus adaptativos e dropdowns inteligentes
+- Layouts flexíveis e breakpoints adequados
 
 ## 🚀 Tecnologias Utilizadas
 
@@ -27,8 +63,6 @@ Uma plataforma completa para conectar estudantes, empresas e universidades, faci
 
 - **Node.js 18+**
 - **npm** ou **yarn**
-- **Conta no Supabase** (para banco de dados)
-- **Git**
 
 ## 🛠️ Instalação e Configuração
 
@@ -88,31 +122,117 @@ yarn dev
 
 Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
 
-## 👥 Tipos de Usuário
+## 📄 **Páginas e Funcionalidades Detalhadas**
+
+### 🏠 **Página Inicial** (`/`)
+- Landing page institucional
+- Apresentação da plataforma
+- Call-to-actions para cadastro/login
+
+### 🔐 **Autenticação**
+#### **Login** (`/login`)
+- Formulário de acesso com email/senha
+- Validação em tempo real
+- Links para recuperação de senha
+- Redirecionamento automático após login
+
+#### **Cadastro** (`/signup`)
+- Formulário multi-etapa (3 passos)
+- Validação de CPF/CNPJ
+- Campos específicos por tipo de usuário
+- Confirmação de email
+
+### 📊 **Dashboard** (`/dashboard`)
+- **Visão Geral**: Cards com estatísticas (em desenvolvimento)
+- **Navegação**: Menu lateral responsivo com itens filtrados por tipo de usuário
+- **Notificações**: Dropdown com notificações em tempo real, contadores de não lidas
+- **Menu do Usuário**: Perfil, configurações e logout
+
+### 👤 **Perfil** (`/profile`)
+- **Visualização**: Dados pessoais e específicos do tipo de usuário
+- **Edição**: Formulário completo para atualização de dados
+- **Upload de Foto**: Sistema de upload de imagem de perfil(MANUTENÇÃO)
+- **Medalhas**: Exibição de conquistas (Ouro/Prata/Bronze)
+
+### 📋 **Sistema de Atividades**
+
+#### **Lista de Atividades** (`/activities`)
+- **Visualização**: Grid responsivo de atividades
+- **Filtros**: Por tipo (criadas/participando), status (pendente/concluída)
+- **Busca**: Busca por título/descrição
+- **Ações**: Ver, editar (líder), abandonar (participante)
+- **Criação**: Botão para nova atividade
+
+#### **Criar Atividade** (`/activities/create`)
+- **Informações Básicas**: Título obrigatório, descrição opcional
+- **Datas**: Início obrigatório, fim opcional
+- **Participantes**: Adição/removação de emails para convite
+- **Links**: Adição de recursos relacionados
+- **Validação**: Campos obrigatórios e formatos
+
+#### **Visualizar Atividade** (`/activities/[id]`)
+- **Informações**: Título, descrição, datas, status
+- **Participantes**: Lista com papéis (Criador/Líder/Membro)
+- **Observações**:
+  - Lista de comentários cronológicos
+  - Adição de novas observações (todos os participantes)
+  - **Exclusão**: Autor pode deletar própria observação, líder pode deletar todas
+- **Links**: Recursos compartilhados, exclusão individual
+- **Ações do Líder**: Editar, transferir liderança, excluir atividade
+- **Ações do Participante**: Abandonar atividade
+- **Ações do Gestor**: Conceder medalhas aos alunos
+
+#### **Editar Atividade** (`/activities/[id]/edit`)
+- **Modificação**: Título, descrição, datas
+- **Convites**: Adicionar novos participantes por email
+- **Links**: Gerenciar recursos da atividade
+- **Permissões**: Apenas o líder pode editar
+
+### 🔔 **Sistema de Notificações**
+- **Tipos de Notificação**:
+  - `invitation`: Convites para atividades
+  - `medal`: Conquistas de medalhas
+  - `activity_update`: Atualizações em atividades
+- **Gestão**: Marcar como lida, contadores automáticos
+- **Limpeza**: Script automático remove notificações lidas há 1h
+
+## 👥 **Tipos de Usuário e Permissões**
 
 ### 🎓 **Aluno**
-- **Cadastro:** CPF obrigatório
-- **Informações Específicas:**
-  - Dados acadêmicos (curso, universidade, período)
-  - Competências e habilidades
-- **Acesso:** Planos premium para visibilidade aumentada
-- **Objetivo:** Encontrar oportunidades de estágio e emprego
+- **Cadastro**: CPF obrigatório, dados acadêmicos
+- **Atividades**: Participar, criar observações, receber medalhas
+- **Medalhas**: Receber conquistas por participação
+- **Notificações**: Convites, medalhas, atualizações
 
 ### 🏢 **Recrutador**
-- **Cadastro:** CPF ou CNPJ
-- **Informações Específicas:**
-  - Dados da empresa (nome, cargo, setor)
-  - Informações de contato profissional
-- **Acesso:** Ferramentas de busca e recrutamento
-- **Objetivo:** Encontrar talentos qualificados
+- **Cadastro**: CPF/CNPJ, dados empresariais
+- **Atividades**: Criar, liderar, gerenciar participantes
+- **Permissões**: Controle total sobre atividades próprias
+- **Convites**: Enviar convites para potenciais membros
 
 ### 🎓 **Gestor Universitário**
-- **Cadastro:** CPF ou CNPJ
-- **Informações Específicas:**
-  - Dados da instituição (universidade, departamento, cargo)
-  - Informações acadêmicas e administrativas
-- **Acesso:** Gestão de parcerias e convênios
-- **Objetivo:** Facilitar conexões entre academia e empresas
+- **Cadastro**: CPF/CNPJ, dados institucionais
+- **Atividades**: Criar, liderar, gerenciar participantes
+- **Medalhas**: Conceder medalhas aos alunos participantes
+- **Moderação**: Controle sobre conteúdo das atividades
+
+### 🔑 **Sistema de Permissões por Atividade**
+```
+👑 LÍDER (Criador ou Transferido):
+├── ✅ Criar/editar atividade
+├── ✅ Convidar participantes
+├── ✅ Transferir liderança
+├── ✅ Excluir atividade
+├── ✅ Deletar QUALQUER observação
+├── ✅ Gerenciar links
+└── ✅ Conceder medalhas (Gestor)
+
+👤 PARTICIPANTE:
+├── ✅ Adicionar observações
+├── ✅ Deletar PRÓPRIA observação
+├── ✅ Visualizar conteúdo
+└── ✅ Abandonar atividade
+```
 
 ## 🔐 Sistema de Autenticação
 
@@ -133,7 +253,7 @@ O projeto utiliza **Better Auth** para um sistema de autenticação robusto e se
 - Validação de sessão em tempo real
 - Proteção contra ataques CSRF
 
-## 📁 Estrutura do Projeto
+## 📁 **Estrutura do Projeto**
 
 ```
 needuk-next/
@@ -143,66 +263,161 @@ needuk-next/
 │   │   │   ├── AuthLoadingScreen.tsx
 │   │   │   ├── footer.tsx
 │   │   │   └── logo.tsx
-│   │   ├── activities/            # Página de atividades (em desenvolvimento)
-│   │   │   └── page.tsx
+│   │   ├── activities/            # Sistema completo de atividades
+│   │   │   ├── [id]/
+│   │   │   │   ├── edit/          # Edição de atividades
+│   │   │   │   └── page.tsx       # Visualização detalhada
+│   │   │   ├── create/            # Criação de atividades
+│   │   │   └── page.tsx           # Lista de atividades
 │   │   ├── api/                   # Rotas da API
-│   │   │   ├── auth/[...all]/     # Rotas de autenticação Better Auth
-│   │   │   └── profile/           # API de gerenciamento de perfil
-│   │   │       ├── route.ts
-│   │   │       └── upload-image/
+│   │   │   ├── activities/        # APIs de atividades
+│   │   │   │   ├── [id]/
+│   │   │   │   │   ├── invite/    # Convites
+│   │   │   │   │   ├── leave/     # Abandonar atividade
+│   │   │   │   │   ├── links/     # Gerenciamento de links
+│   │   │   │   │   ├── observations/ # Observações
+│   │   │   │   │   │   └── [observationId]/ # Deletar observação
+│   │   │   │   │   ├── participants/ # Participantes
+│   │   │   │   │   ├── transfer-leadership/ # Transferir liderança
+│   │   │   │   │   └── route.ts    # CRUD atividade
+│   │   │   │   └── route.ts        # Listar atividades
+│   │   │   ├── auth/[...all]/     # Better Auth (autenticação)
+│   │   │   ├── invitations/[id]/  # Responder convites
+│   │   │   │   └── respond/
+│   │   │   ├── medals/            # Sistema de medalhas
+│   │   │   │   ├── award/         # Conceder medalhas
+│   │   │   │   └── route.ts       # Listar medalhas
+│   │   │   ├── notifications/     # Sistema de notificações
+│   │   │   │   ├── cleanup/       # Limpeza automática
+│   │   │   │   └── route.ts       # CRUD notificações
+│   │   │   ├── profile/           # Perfil do usuário
+│   │   │   │   ├── route.ts
+│   │   │   │   └── upload-image/
+│   │   │   └── users/[id]/        # Medalhas do usuário
+│   │   │       └── medals/
 │   │   ├── dashboard/             # Dashboard do usuário
-│   │   │   ├── _components/       # Componentes específicos do dashboard
+│   │   │   ├── _components/       # Componentes do dashboard
+│   │   │   │   ├── dashboard-layout.tsx
+│   │   │   │   ├── button-signout.tsx
+│   │   │   │   └── index.ts
 │   │   │   └── page.tsx
 │   │   ├── login/                 # Página de login
-│   │   │   ├── _components/
-│   │   │   └── page.tsx
 │   │   ├── profile/               # Página de perfil
-│   │   │   ├── _components/       # Componentes do formulário de perfil
-│   │   │   └── page.tsx
 │   │   ├── signup/                # Página de cadastro
-│   │   │   ├── _components/
-│   │   │   └── page.tsx
 │   │   ├── globals.css            # Estilos globais Tailwind
 │   │   ├── layout.tsx             # Layout raiz da aplicação
-│   │   └── page.tsx               # Página inicial (landing page)
-│   ├── generated/prisma/          # Cliente Prisma gerado automaticamente
+│   │   └── page.tsx               # Landing page
+│   ├── components/
+│   │   └── ui/                    # Componentes reutilizáveis
+│   │       ├── Input.tsx          # Input customizado
+│   │       ├── Button.tsx         # Botão customizado
+│   │       ├── FormError.tsx      # Exibição de erros
+│   │       ├── Modal.tsx          # Modal base
+│   │       └── index.ts           # Exportações
+│   ├── constants/                 # Constantes da aplicação
+│   │   ├── styles.ts              # Classes CSS reutilizáveis
+│   │   ├── messages.ts            # Mensagens padronizadas
+│   │   ├── validation.ts          # Regras de validação
+│   │   └── index.ts               # Exportações
+│   ├── generated/prisma/          # Cliente Prisma gerado
 │   ├── hooks/                     # Hooks customizados React
-│   │   └── useAuth.ts             # Hook para redirecionamento baseado em auth
+│   │   ├── custom/                # Hooks específicos
+│   │   │   ├── useAuth.ts         # Autenticação
+│   │   │   ├── useFormValidation.ts # Validação de formulários
+│   │   │   ├── useApi.ts          # Chamadas API
+│   │   │   └── index.ts
+│   │   └── useAuth.ts             # Hook principal de auth
 │   └── lib/                       # Utilitários e configurações
 │       ├── auth.ts                # Configuração Better Auth
 │       ├── auth-client.ts         # Cliente de autenticação
-│       └── prisma.ts              # Cliente Prisma
+│       ├── prisma.ts              # Cliente Prisma
+│       └── utils/                 # Utilitários organizados
+│           ├── auth-middleware.ts # Middleware de autenticação
+│           ├── validation-helpers.ts # Helpers de validação
+│           ├── response-helpers.ts # Helpers de resposta API
+│           ├── prisma-selects.ts  # Selects comuns do Prisma
+│           ├── notification-cleanup.ts # Limpeza de notificações
+│           └── index.ts           # Exportações
 ├── prisma/
-│   ├── migrations/                # Migrações do banco de dados
-│   └── schema.prisma              # Schema do banco de dados
-├── public/                        # Arquivos estáticos
-│   ├── home/                      # Imagens da landing page
+│   ├── migrations/                # Migrações do banco
+│   └── schema.prisma              # Schema do banco
+├── public/
+│   ├── home/                      # Imagens da landing
+│   ├── uploads/
+│   │   └── profiles/              # Fotos de perfil
 │   └── *.png/svg                  # Logo e ícones
-├── exampleENV.txt                 # Exemplo de variáveis de ambiente
+├── src/
+│   ├── scripts/
+│   │   └── cleanup-notifications.ts # Script de limpeza
+│   └── types/                     # Tipos TypeScript (se houver)
+├── exampleENV.txt                 # Exemplo de variáveis
 ├── next.config.ts                 # Configuração Next.js
 ├── package.json                   # Dependências e scripts
-├── tailwind.config.*              # Configuração Tailwind CSS
+├── tailwind.config.*              # Configuração Tailwind
 ├── tsconfig.json                  # Configuração TypeScript
 └── README.md                      # Este arquivo
 ```
 
-## 🚀 Scripts Disponíveis
+## 🔌 **APIs Implementadas**
+
+### **Sistema de Atividades**
+- `GET /api/activities` - Lista atividades do usuário
+- `GET /api/activities/[id]` - Detalhes de uma atividade
+- `POST /api/activities/[id]` - Criar nova atividade
+- `PUT /api/activities/[id]` - Atualizar atividade
+- `DELETE /api/activities/[id]` - Excluir atividade
+
+### **Participantes e Convites**
+- `POST /api/activities/[id]/invite` - Convidar participantes
+- `DELETE /api/activities/[id]/leave` - Abandonar atividade
+- `PUT /api/activities/[id]/transfer-leadership` - Transferir liderança
+- `POST /api/invitations/[id]/respond` - Responder convite
+
+### **Observações**
+- `GET /api/activities/[id]/observations` - Listar observações
+- `POST /api/activities/[id]/observations` - Criar observação
+- `DELETE /api/activities/[id]/observations/[observationId]` - Deletar observação
+
+### **Links e Recursos**
+- `GET /api/activities/[id]/links` - Listar links
+- `POST /api/activities/[id]/links` - Adicionar link
+- `DELETE /api/activities/[id]/links/[linkId]` - Remover link
+
+### **Sistema de Medalhas**
+- `GET /api/medals` - Listar tipos de medalha
+- `POST /api/medals/award` - Conceder medalha
+- `GET /api/users/[id]/medals` - Medalhas de um usuário
+
+### **Notificações**
+- `GET /api/notifications` - Listar notificações do usuário
+- `PUT /api/notifications` - Marcar notificação como lida
+- `DELETE /api/notifications/cleanup` - Limpeza automática (autenticada)
+
+### **Perfil e Usuário**
+- `GET /api/profile` - Dados do perfil
+- `PUT /api/profile` - Atualizar perfil
+- `POST /api/profile/upload-image` - Upload de foto
+
+## 🚀 **Scripts Disponíveis**
 
 ```bash
 # Desenvolvimento
-npm run dev          # Inicia servidor de desenvolvimento
-npm run build        # Build para produção
-npm run start        # Executa aplicação em produção
+npm run dev                    # Inicia servidor de desenvolvimento
+npm run build                  # Build para produção
+npm run start                  # Executa aplicação em produção
 
 # Banco de Dados (Prisma)
-npx prisma generate  # Gera cliente Prisma
-npx prisma db push   # Aplica migrações no banco
-npx prisma studio    # Abre interface gráfica do banco
+npx prisma generate           # Gera cliente Prisma
+npx prisma db push            # Aplica migrações no banco
+npx prisma studio             # Abre interface gráfica do banco
+
+# Manutenção
+npm run cleanup:notifications # Limpa notificações lidas há 1h+
 
 # Desenvolvimento Avançado
-npx prisma migrate status    # Status das migrações
-npx prisma migrate reset     # Reset do banco (CUIDADO!)
-npx prisma db seed          # Popular banco com dados de teste
+npx prisma migrate status     # Status das migrações
+npx prisma migrate reset      # Reset do banco (CUIDADO!)
+npx prisma db seed           # Popular banco com dados de teste
 ```
 
 ## 🔧 Comandos Úteis para Desenvolvimento
@@ -246,38 +461,68 @@ DEBUG=* npm run dev
 ANALYZE=true npm run build
 ```
 
-## 📊 Modelo de Dados
+## 📊 **Modelo de Dados**
 
 O banco de dados utiliza PostgreSQL com as seguintes entidades principais:
 
 ### **User** (Usuário)
-- Dados pessoais (nome, email, telefone, endereço)
-- Tipo de usuário (aluno/recrutador/gestor)
-- Campos específicos por tipo
-- Sistema de planos (free/plus/premium/pro)
+- **Dados Pessoais**: nome, email, telefone, endereço, CEP, cidade, estado
+- **Autenticação**: senha criptografada, email verificado
+- **Tipo de Usuário**: 'aluno', 'recrutador', 'gestor'
+- **Campos Específicos**:
+  - Aluno: CPF, curso, universidade, período
+  - Recrutador: CPF/CNPJ, nome empresa, cargo, setor
+  - Gestor: CPF/CNPJ, nome universidade, departamento, cargo
+- **Sistema de Medalhas**: contadores de ouro, prata, bronze
+- **Plano**: 'free', 'plus', 'premium', 'pro'
 
-### **Session** (Sessão)
-- Controle de sessões ativas
-- Segurança com tokens
-- Rastreamento de IP e user agent
+### **Activity** (Atividade)
+- **Informações Básicas**: título, descrição, status ('pending'/'completed')
+- **Datas**: startDate (obrigatório), endDate (opcional)
+- **Relacionamentos**: createdBy, leaderId (transferível)
+- **Contadores**: participantes, observações, links
 
-### **Account** (Conta)
-- Integração com provedores OAuth
-- Tokens de acesso e refresh
+### **ActivityParticipant** (Participante)
+- **Relações**: atividade e usuário
+- **Papéis**: role (ex: 'Líder', 'Sem cargo')
+- **Data**: joinedAt (quando entrou)
 
-### **Verification** (Verificação)
-- Sistema de verificação de email
-- Tokens temporários
+### **ActivityInvitation** (Convite)
+- **Convite**: email do convidado, status ('pending'/'accepted'/'declined')
+- **Rastreamento**: quem convidou, quando aceitou
 
-## 🔄 Próximas Funcionalidades
+### **ActivityObservation** (Observação)
+- **Comentários**: conteúdo do comentário
+- **Relacionamentos**: atividade, usuário autor
+- **Auditoria**: createdAt, updatedAt
 
-- [ ] Sistema de atividades e tarefas
-- [ ] Matching entre alunos e empresas
-- [ ] Sistema de notificações
-- [ ] Integração com LinkedIn
-- [ ] Dashboard com estatísticas avançadas
-- [ ] Sistema de mensagens
-- [ ] Avaliações e reviews
+### **ActivityLink** (Link)
+- **Recursos**: título e URL do link
+- **Contexto**: relacionado a uma atividade
+
+### **Notification** (Notificação)
+- **Conteúdo**: tipo, título, mensagem
+- **Estado**: lida/não lida, data de leitura
+- **Tipos**: 'invitation', 'medal', 'activity_update'
+
+### **Session/Account/Verification** (Autenticação)
+- **Session**: controle de sessões ativas, segurança
+- **Account**: integração OAuth, tokens de acesso
+- **Verification**: verificação de email, tokens temporários
+
+## 🔄 **Próximas Funcionalidades**
+
+- [ ] **Sistema de Matching**: Algoritmos para conectar alunos e empresas
+- [ ] **Currículos/Relatórios**: Sistema de upload e gestão de documentos
+- [ ] **Vagas de Emprego**: Publicação e candidatura a vagas
+- [ ] **Banco de Talentos**: Busca avançada de perfis
+- [ ] **Integração com LinkedIn**: Importação automática de dados
+- [ ] **Dashboard Avançado**: Gráficos e estatísticas detalhadas
+- [ ] **Sistema de Mensagens**: Chat entre usuários
+- [ ] **Avaliações e Reviews**: Sistema de feedback
+- [ ] **Relatórios de Progresso**: Acompanhamento de atividades
+- [ ] **Notificações Push**: Alertas em tempo real
+- [ ] **Integração com Calendários**: Sincronização de eventos
 
 ## 🤝 Contribuição
 
@@ -291,6 +536,36 @@ O banco de dados utiliza PostgreSQL com as seguintes entidades principais:
 
 Este projeto está sob a licença MIT. Veja o arquivo `LICENSE` para mais detalhes.
 
+## 🏗️ **Arquitetura e Boas Práticas**
+
+### **Padrões Implementados**
+- **Clean Architecture**: Separação clara entre camadas (UI/API/Business/Data)
+- **SOLID Principles**: Princípios de design orientado a objetos
+- **DRY (Don't Repeat Yourself)**: Componentes e utilitários reutilizáveis
+- **Type Safety**: TypeScript em 100% do projeto
+- **API RESTful**: Endpoints bem estruturados com padrões REST
+
+### **Segurança**
+- **Autenticação JWT**: Tokens seguros com expiração
+- **Middleware de Autenticação**: Proteção em todas as rotas privadas
+- **Validação de Dados**: Zod schemas para entrada/saída
+- **Sanitização**: Prevenção de XSS e injeção de SQL
+- **CORS**: Controle de origens permitidas
+
+### **Performance**
+- **Next.js App Router**: Roteamento otimizado
+- **Server Components**: Renderização eficiente no servidor
+- **Database Indexing**: Consultas otimizadas
+- **Image Optimization**: Upload e exibição otimizados
+- **Code Splitting**: Carregamento sob demanda
+
+### **Experiência do Usuário**
+- **Design System**: Componentes consistentes e acessíveis
+- **Responsividade**: Suporte completo mobile/tablet/desktop
+- **Feedback Visual**: Loading states, tooltips, validações
+- **Acessibilidade**: Navegação por teclado, leitores de tela
+- **Progressive Enhancement**: Funciona sem JavaScript
+
 ---
 
-**Desenvolvido com ❤️ para conectar talentos e oportunidades educacionais**
+**🚀 Plataforma NeedUK - Conectando talentos e oportunidades educacionais com tecnologia de ponta!**

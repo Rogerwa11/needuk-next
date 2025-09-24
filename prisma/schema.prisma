@@ -27,6 +27,11 @@ model User {
   cep      String
   plan     String  @default("free") // 'free', 'plus', 'premium', 'pro'
 
+  // Sistema de medalhas
+  goldMedals   Int @default(0) // Medalhas de ouro
+  silverMedals Int @default(0) // Medalhas de prata
+  bronzeMedals Int @default(0) // Medalhas de bronze
+
   // Campos específicos para Aluno
   curso        String?
   universidade String?
@@ -46,6 +51,15 @@ model User {
   updatedAt DateTime  @default(now()) @updatedAt
   sessions  Session[]
   accounts  Account[]
+
+  // Relações com atividades
+  createdActivities    Activity[]            @relation("ActivityCreator")
+  ledActivities        Activity[]            @relation("ActivityLeader")
+  activityParticipants ActivityParticipant[]
+  activityObservations ActivityObservation[]
+  sentInvitations      ActivityInvitation[]  @relation("InvitationSender")
+  receivedInvitations  ActivityInvitation[]  @relation("InvitationReceiver")
+  notifications        Notification[]
 
   @@unique([email])
   @@map("user")
@@ -94,4 +108,111 @@ model Verification {
   updatedAt  DateTime @default(now()) @updatedAt
 
   @@map("verification")
+}
+
+// Sistema de Atividades
+model Activity {
+  id          String  @id @default(cuid())
+  title       String // Título obrigatório
+  description String? // Descrição opcional
+  status      String  @default("pending") // 'pending' | 'completed'
+
+  // Datas
+  startDate DateTime // Data de início obrigatória
+  endDate   DateTime? // Data de fim opcional
+
+  // Relacionamentos
+  createdBy String // ID do usuário que criou
+  creator   User   @relation("ActivityCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+
+  leaderId String // ID do líder atual (pode ser transferido)
+  leader   User   @relation("ActivityLeader", fields: [leaderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relações
+  participants ActivityParticipant[]
+  invitations  ActivityInvitation[]
+  observations ActivityObservation[]
+  links        ActivityLink[]
+
+  @@map("activity")
+}
+
+model ActivityParticipant {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  role     String? // Cargo/função do participante
+  joinedAt DateTime @default(now())
+
+  @@unique([activityId, userId]) // Um usuário só pode participar uma vez por atividade
+  @@map("activity_participant")
+}
+
+model ActivityInvitation {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  invitedEmail String // Email do convidado
+  invitedBy    String // ID de quem convidou
+  inviter      User   @relation("InvitationSender", fields: [invitedBy], references: [id], onDelete: Cascade)
+
+  status    String   @default("pending") // 'pending' | 'accepted' | 'declined'
+  createdAt DateTime @default(now())
+
+  // Quando aceito, cria uma relação com o usuário
+  acceptedBy String?
+  accepter   User?   @relation("InvitationReceiver", fields: [acceptedBy], references: [id])
+
+  @@map("activity_invitation")
+}
+
+model ActivityObservation {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  content   String // Conteúdo da observação
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("activity_observation")
+}
+
+model ActivityLink {
+  id         String   @id @default(cuid())
+  activityId String
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  title     String // Título do link
+  url       String // URL do link
+  createdAt DateTime @default(now())
+
+  @@map("activity_link")
+}
+
+// Sistema de Notificações
+model Notification {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type      String // 'invitation' | 'medal' | 'activity_update' | 'system'
+  title     String // Título da notificação
+  message   String // Mensagem da notificação
+  read      Boolean   @default(false)
+  readAt    DateTime? // Quando foi marcada como lida
+  createdAt DateTime  @default(now())
+
+  @@map("notification")
 }

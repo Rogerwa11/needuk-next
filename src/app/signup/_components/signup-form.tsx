@@ -511,7 +511,6 @@ export const useSignupForm = () => {
         setLoading(true);
 
         try {
-            //console.log('Dados do formulário:', { ...formData, plan });
 
             await authClient.signUp.email({
                 email: formData.email,
