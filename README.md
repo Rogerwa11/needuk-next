@@ -510,20 +510,6 @@ O banco de dados utiliza PostgreSQL com as seguintes entidades principais:
 - **Account**: integração OAuth, tokens de acesso
 - **Verification**: verificação de email, tokens temporários
 
-## 🔄 **Próximas Funcionalidades**
-
-- [ ] **Sistema de Matching**: Algoritmos para conectar alunos e empresas
-- [ ] **Currículos/Relatórios**: Sistema de upload e gestão de documentos
-- [ ] **Vagas de Emprego**: Publicação e candidatura a vagas
-- [ ] **Banco de Talentos**: Busca avançada de perfis
-- [ ] **Integração com LinkedIn**: Importação automática de dados
-- [ ] **Dashboard Avançado**: Gráficos e estatísticas detalhadas
-- [ ] **Sistema de Mensagens**: Chat entre usuários
-- [ ] **Avaliações e Reviews**: Sistema de feedback
-- [ ] **Relatórios de Progresso**: Acompanhamento de atividades
-- [ ] **Notificações Push**: Alertas em tempo real
-- [ ] **Integração com Calendários**: Sincronização de eventos
-
 ## 🤝 Contribuição
 
 1. Fork o projeto
