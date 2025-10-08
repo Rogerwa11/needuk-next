@@ -150,8 +150,8 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Apenas alunos, recrutadores e gestores podem criar atividades
-        if (!['aluno', 'recrutador', 'gestor'].includes(user.userType)) {
+        // Apenas alunos e gestores podem criar atividades
+        if (!['aluno', 'gestor'].includes(user.userType)) {
             return NextResponse.json(
                 { error: 'Você não tem permissão para criar atividades' },
                 { status: 403 }
