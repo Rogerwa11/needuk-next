@@ -17,7 +17,7 @@ import {
     Trash2,
     UserPlus
 } from 'lucide-react';
-import { Input } from '@/components/ui';
+import { Input, showSuccess, showError, showWarning, confirmDanger } from '@/components/ui';
 
 interface Link {
     id: string;
@@ -164,7 +164,7 @@ export default function EditActivityPage() {
 
         const validEmails = participantEmails.filter(email => email.trim() !== '');
         if (validEmails.length === 0) {
-            alert('Adicione pelo menos um email válido');
+            showWarning('Adicione pelo menos um email válido');
             return;
         }
 
@@ -182,25 +182,26 @@ export default function EditActivityPage() {
             });
 
             if (response.ok) {
-                alert(`Convites enviados com sucesso para ${validEmails.length} participante(s)!`);
+                showSuccess(`Convites enviados com sucesso para ${validEmails.length} participante(s)!`);
                 setParticipantEmails(['']);
                 setShowParticipantManagement(false);
                 // Recarregar atividade para atualizar lista de participantes
                 await fetchActivity();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Erro ao enviar convites');
+                showError(data.message || data.error || 'Erro ao enviar convites');
             }
         } catch (error) {
             console.error('Erro ao convidar participantes:', error);
-            alert('Erro ao enviar convites');
+            showError('Erro ao enviar convites');
         } finally {
             setInvitingParticipants(false);
         }
     };
 
     const removeParticipant = async (participantId: string, participantUser: { name: string; email: string }) => {
-        if (!confirm(`Tem certeza que deseja remover ${participantUser.name || participantUser.email} desta atividade?`)) {
+        const confirmed = await confirmDanger(`Tem certeza que deseja remover ${participantUser.name || participantUser.email} desta atividade?`, 'Remover participante');
+        if (!confirmed) {
             return;
         }
 
@@ -210,15 +211,15 @@ export default function EditActivityPage() {
             });
 
             if (response.ok) {
-                alert(`${participantUser.name || participantUser.email} foi removido da atividade`);
+                showSuccess(`${participantUser.name || participantUser.email} foi removido da atividade`);
                 await fetchActivity();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Erro ao remover participante');
+                showError(data.error || 'Erro ao remover participante');
             }
         } catch (error) {
             console.error('Erro ao remover participante:', error);
-            alert('Erro ao remover participante');
+            showError('Erro ao remover participante');
         }
     };
 

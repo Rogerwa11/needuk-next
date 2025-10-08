@@ -81,11 +81,38 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const existingEmails = existingUsers.map(user => user.email);
         const newEmails = emails.filter(email => !existingEmails.includes(email));
 
+        // Verificar se todos os emails foram encontrados
+        if (newEmails.length > 0) {
+            return NextResponse.json(
+                {
+                    error: 'Usuário não encontrado',
+                    message: `Os seguintes emails não foram encontrados na plataforma: ${newEmails.join(', ')}`,
+                    notFoundEmails: newEmails
+                },
+                { status: 422 }
+            );
+        }
+
+        // Verificar se algum usuário já é participante da atividade
+        const alreadyParticipants = existingUsers.filter(user =>
+            activity.participants.some(p => p.userId === user.id)
+        );
+
+        if (alreadyParticipants.length > 0) {
+            return NextResponse.json(
+                {
+                    error: 'Usuário já participa da atividade',
+                    message: `Os seguintes usuários já participam da atividade: ${alreadyParticipants.map(u => u.email).join(', ')}`,
+                    alreadyParticipants: alreadyParticipants.map(u => u.email)
+                },
+                { status: 422 }
+            );
+        }
+
         // Usar transação para garantir consistência
         await prisma.$transaction(async (tx) => {
-            // Para usuários existentes, verificar se já são participantes
+            // Para usuários existentes, verificar se já foram convidados
             for (const user of existingUsers) {
-                const isAlreadyParticipant = activity.participants.some(p => p.userId === user.id);
                 const isAlreadyInvited = await tx.activityInvitation.findFirst({
                     where: {
                         activityId: activityId,
@@ -94,7 +121,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     }
                 });
 
-                if (!isAlreadyParticipant && !isAlreadyInvited) {
+                if (!isAlreadyInvited) {
                     // Criar convite para usuário existente
                     const invitation = await tx.activityInvitation.create({
                         data: {
@@ -116,22 +143,12 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
                     });
                 }
             }
-
-            // Para emails não cadastrados, poderíamos enviar email de convite
-            // Por enquanto, apenas registrar que foram "convidado" (mas não criar conta automaticamente)
-            // Isso pode ser implementado futuramente com sistema de email
         });
-
-        const invitedCount = existingUsers.filter(user => {
-            const isAlreadyParticipant = activity.participants.some(p => p.userId === user.id);
-            return !isAlreadyParticipant;
-        }).length;
 
         return NextResponse.json({
             success: true,
             message: `Convites enviados com sucesso!`,
-            invitedUsers: invitedCount,
-            pendingEmails: newEmails.length,
+            invitedUsers: existingUsers.length,
         });
 
     } catch (error) {

@@ -23,7 +23,7 @@ import {
     ExternalLink,
     MoreHorizontal
 } from 'lucide-react';
-import { Input } from '@/components/ui';
+import { Input, showSuccess, showError, showWarning, confirmDanger, confirmWarning } from '@/components/ui';
 
 interface Activity {
     id: string;
@@ -176,7 +176,7 @@ export default function ActivityDetailPage() {
     // Funções de manipulação
     const awardMedal = async () => {
         if (!selectedStudent || !selectedMedalType) {
-            alert('Selecione um aluno e um tipo de medalha');
+            showWarning('Selecione um aluno e um tipo de medalha');
             return;
         }
 
@@ -196,7 +196,7 @@ export default function ActivityDetailPage() {
             });
 
             if (response.ok) {
-                alert('Medalha concedida com sucesso!');
+                showSuccess('Medalha concedida com sucesso!');
                 setShowMedalAward(false);
                 setSelectedStudent('');
                 setSelectedMedalType('BRONZE');
@@ -205,18 +205,19 @@ export default function ActivityDetailPage() {
                 await fetchActivity();
             } else {
                 const data = await response.json();
-                alert(data.error || 'Erro ao conceder medalha');
+                showError(data.error || 'Erro ao conceder medalha');
             }
         } catch (error) {
             console.error('Erro ao conceder medalha:', error);
-            alert('Erro ao conceder medalha');
+            showError('Erro ao conceder medalha');
         } finally {
             setAwardingMedal(false);
         }
     };
 
     const handleDeleteActivity = async () => {
-        if (!confirm('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.')) {
+        const confirmed = await confirmDanger('Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.', 'Excluir atividade');
+        if (!confirmed) {
             return;
         }
 
@@ -228,11 +229,11 @@ export default function ActivityDetailPage() {
             if (response.ok) {
                 router.push('/activities');
             } else {
-                alert('Erro ao excluir atividade');
+                showError('Erro ao excluir atividade');
             }
         } catch (error) {
             console.error('Erro ao excluir atividade:', error);
-            alert('Erro ao excluir atividade');
+            showError('Erro ao excluir atividade');
         }
     };
 
@@ -253,11 +254,11 @@ export default function ActivityDetailPage() {
                 setNewObservation('');
                 fetchActivity(); // Recarregar dados
             } else {
-                alert('Erro ao adicionar observação');
+                showError('Erro ao adicionar observação');
             }
         } catch (error) {
             console.error('Erro ao adicionar observação:', error);
-            alert('Erro ao adicionar observação');
+            showError('Erro ao adicionar observação');
         } finally {
             setSubmitting(false);
         }
@@ -281,18 +282,19 @@ export default function ActivityDetailPage() {
                 setShowAddLink(false);
                 fetchActivity(); // Recarregar dados
             } else {
-                alert('Erro ao adicionar link');
+                showError('Erro ao adicionar link');
             }
         } catch (error) {
             console.error('Erro ao adicionar link:', error);
-            alert('Erro ao adicionar link');
+            showError('Erro ao adicionar link');
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDeleteLink = async (linkId: string) => {
-        if (!confirm('Tem certeza que deseja remover este link?')) {
+        const confirmed = await confirmWarning('Tem certeza que deseja remover este link?', 'Remover link');
+        if (!confirmed) {
             return;
         }
 
@@ -304,16 +306,17 @@ export default function ActivityDetailPage() {
             if (response.ok) {
                 fetchActivity(); // Recarregar dados
             } else {
-                alert('Erro ao remover link');
+                showError('Erro ao remover link');
             }
         } catch (error) {
             console.error('Erro ao remover link:', error);
-            alert('Erro ao remover link');
+            showError('Erro ao remover link');
         }
     };
 
     const handleLeaveActivity = async () => {
-        if (!confirm('Tem certeza que deseja abandonar esta atividade? Você perderá acesso a ela.')) {
+        const confirmed = await confirmWarning('Tem certeza que deseja abandonar esta atividade? Você perderá acesso a ela.', 'Abandonar atividade');
+        if (!confirmed) {
             return;
         }
 
@@ -326,24 +329,25 @@ export default function ActivityDetailPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Você abandonou a atividade com sucesso.');
+                showSuccess('Você abandonou a atividade com sucesso.');
                 // Aguardar um momento para garantir que a transação seja processada
                 setTimeout(() => {
                     router.push('/activities');
                 }, 500);
             } else {
-                alert(data.error || 'Erro ao abandonar atividade');
+                showError(data.error || 'Erro ao abandonar atividade');
             }
         } catch (error) {
             console.error('Erro ao abandonar atividade:', error);
-            alert('Erro ao abandonar atividade');
+            showError('Erro ao abandonar atividade');
         } finally {
             setSubmitting(false);
         }
     };
 
     const handleDeleteObservation = async (observationId: string) => {
-        if (!confirm('Tem certeza que deseja deletar esta observação? Esta ação não pode ser desfeita.')) {
+        const confirmed = await confirmDanger('Tem certeza que deseja deletar esta observação? Esta ação não pode ser desfeita.', 'Deletar observação');
+        if (!confirmed) {
             return;
         }
 
@@ -358,13 +362,13 @@ export default function ActivityDetailPage() {
             if (response.ok) {
                 // Recarregar dados da atividade para atualizar a lista de observações
                 await fetchActivity();
-                alert('Observação deletada com sucesso!');
+                showSuccess('Observação deletada com sucesso!');
             } else {
-                alert(data.error || 'Erro ao deletar observação');
+                showError(data.error || 'Erro ao deletar observação');
             }
         } catch (error) {
             console.error('Erro ao deletar observação:', error);
-            alert('Erro ao deletar observação');
+            showError('Erro ao deletar observação');
         } finally {
             setSubmitting(false);
         }
@@ -372,11 +376,12 @@ export default function ActivityDetailPage() {
 
     const handleTransferLeadership = async () => {
         if (!newLeaderId) {
-            alert('Selecione um novo líder');
+            showWarning('Selecione um novo líder');
             return;
         }
 
-        if (!confirm('Tem certeza que deseja transferir a liderança desta atividade? Você perderá os privilégios de líder.')) {
+        const confirmed = await confirmWarning('Tem certeza que deseja transferir a liderança desta atividade? Você perderá os privilégios de líder.', 'Transferir liderança');
+        if (!confirmed) {
             return;
         }
 
@@ -393,7 +398,7 @@ export default function ActivityDetailPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Liderança transferida com sucesso!');
+                showSuccess('Liderança transferida com sucesso!');
                 setShowTransferLeadership(false);
                 setNewLeaderId('');
                 // Recarregar dados da atividade para atualizar informações de liderança
@@ -401,11 +406,11 @@ export default function ActivityDetailPage() {
                 // Também recarregar dados do usuário atual para atualizar permissões
                 await fetchCurrentUser();
             } else {
-                alert(data.error || 'Erro ao transferir liderança');
+                showError(data.error || 'Erro ao transferir liderança');
             }
         } catch (error) {
             console.error('Erro ao transferir liderança:', error);
-            alert('Erro ao transferir liderança');
+            showError('Erro ao transferir liderança');
         } finally {
             setSubmitting(false);
         }

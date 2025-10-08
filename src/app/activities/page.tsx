@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Logo } from '@/app/_components/logo';
+import { showSuccess, showError, confirmWarning } from '@/components/ui';
 
 import {
     Plus,
@@ -87,7 +88,8 @@ export default function ActivitiesPage() {
     };
 
     const handleLeaveActivity = async (activityId: string) => {
-        if (!confirm('Tem certeza que deseja abandonar esta atividade? Você perderá acesso a ela.')) {
+        const confirmed = await confirmWarning('Tem certeza que deseja abandonar esta atividade? Você perderá acesso a ela.', 'Abandonar atividade');
+        if (!confirmed) {
             return;
         }
 
@@ -99,17 +101,17 @@ export default function ActivitiesPage() {
             const data = await response.json();
 
             if (response.ok) {
-                alert('Você abandonou a atividade com sucesso.');
+                showSuccess('Você abandonou a atividade com sucesso.');
                 // Aguardar um momento para garantir que a transação seja processada
                 setTimeout(() => {
                     fetchActivities(); // Recarregar lista
                 }, 500);
             } else {
-                alert(data.error || 'Erro ao abandonar atividade');
+                showError(data.error || 'Erro ao abandonar atividade');
             }
         } catch (error) {
             console.error('Erro ao abandonar atividade:', error);
-            alert('Erro ao abandonar atividade');
+            showError('Erro ao abandonar atividade');
         } finally {
             setMenuOpen(null);
         }
