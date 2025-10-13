@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
         } = body;
 
         // Padronizar emails dos participantes para lowercase
-        const normalizedParticipantEmails = participantEmails.map(email => email.toLowerCase().trim());
+        const normalizedParticipantEmails = participantEmails.map((email: string) => email.toLowerCase().trim());
 
         // Validações básicas
         if (!title || !startDate) {
