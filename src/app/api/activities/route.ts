@@ -169,6 +169,9 @@ export async function POST(request: NextRequest) {
             links = []
         } = body;
 
+        // Padronizar emails dos participantes para lowercase
+        const normalizedParticipantEmails = participantEmails.map(email => email.toLowerCase().trim());
+
         // Validações básicas
         if (!title || !startDate) {
             return NextResponse.json(
@@ -229,8 +232,8 @@ export async function POST(request: NextRequest) {
             });
 
             // Processar convites para outros participantes
-            if (participantEmails && participantEmails.length > 0) {
-                for (const email of participantEmails) {
+            if (normalizedParticipantEmails && normalizedParticipantEmails.length > 0) {
+                for (const email of normalizedParticipantEmails) {
                     // Verificar se o usuário existe
                     const user = await tx.user.findUnique({
                         where: { email },

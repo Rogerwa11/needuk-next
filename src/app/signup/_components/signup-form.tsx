@@ -342,6 +342,9 @@ export const useSignupForm = () => {
 
         // Validação em tempo real para email
         if (field === 'email') {
+            // Padronizar email para lowercase
+            formattedValue = formattedValue.toLowerCase().trim();
+
             const emailSchema = z.string().email();
             const result = emailSchema.safeParse(formattedValue);
             setIsEmailValid(result.success);

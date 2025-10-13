@@ -34,6 +34,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const body = await request.json();
         const { emails, activityTitle } = inviteParticipantsSchema.parse(body);
 
+        // Padronizar emails para lowercase
+        const normalizedEmails = emails.map(email => email.toLowerCase().trim());
+
         // Verificar se a atividade existe e se o usuário é o líder
         const activity = await prisma.activity.findUnique({
             where: { id: activityId },
@@ -68,7 +71,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         const existingUsers = await prisma.user.findMany({
             where: {
                 email: {
-                    in: emails
+                    in: normalizedEmails
                 }
             },
             select: {
@@ -79,7 +82,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         });
 
         const existingEmails = existingUsers.map(user => user.email);
-        const newEmails = emails.filter(email => !existingEmails.includes(email));
+        const newEmails = normalizedEmails.filter(email => !existingEmails.includes(email));
 
         // Verificar se todos os emails foram encontrados
         if (newEmails.length > 0) {

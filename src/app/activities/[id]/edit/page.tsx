@@ -168,6 +168,9 @@ export default function EditActivityPage() {
             return;
         }
 
+        // Padronizar emails para lowercase
+        const normalizedEmails = validEmails.map(email => email.toLowerCase().trim());
+
         setInvitingParticipants(true);
         try {
             const response = await fetch(`/api/activities/${activityId}/invite`, {
@@ -176,13 +179,13 @@ export default function EditActivityPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    emails: validEmails,
+                    emails: normalizedEmails,
                     activityTitle: activity.title,
                 }),
             });
 
             if (response.ok) {
-                showSuccess(`Convites enviados com sucesso para ${validEmails.length} participante(s)!`);
+                showSuccess(`Convites enviados com sucesso para ${normalizedEmails.length} participante(s)!`);
                 setParticipantEmails(['']);
                 setShowParticipantManagement(false);
                 // Recarregar atividade para atualizar lista de participantes
