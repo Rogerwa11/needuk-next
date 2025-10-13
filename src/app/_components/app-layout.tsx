@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { Logo } from '@/app/_components/logo';
 import { ButtonSignout } from '@/app/dashboard/_components/button-signout';
+import Footer from '@/app/_components/footer';
 
 interface User {
     id: string;
@@ -184,7 +185,7 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
     );
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Sidebar para mobile - ultra compacta */}
             <div className={`fixed inset-0 z-50 lg:hidden ${sidebarOpen ? 'block' : 'hidden'}`}>
                 <div className="fixed inset-0 bg-black/50" onClick={() => setSidebarOpen(false)} />
@@ -203,7 +204,7 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
             </div>
 
             {/* Conteúdo principal */}
-            <div className="lg:ml-40">
+            <div className="lg:ml-40 flex flex-col flex-1">
                 {/* Header - mais compacto */}
                 <header className="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-40">
                     <div className="flex items-center justify-between px-4 py-3">
@@ -386,6 +387,9 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
                 <main className="flex-1">
                     {children}
                 </main>
+
+                {/* Footer - sempre no final */}
+                <Footer />
             </div>
 
             {/* Overlay para fechar dropdowns quando clicar fora */}

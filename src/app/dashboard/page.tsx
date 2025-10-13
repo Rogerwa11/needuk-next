@@ -11,7 +11,7 @@ export default async function Dashboard() {
     }
 
     return (
-        <div className="p-6">
+        <div className="p-6 min-h-[calc(100vh-50px)] flex flex-col">
             {/* Header da Dashboard */}
             <div className="mb-8">
                 <h1 className="text-3xl font-bold text-gray-800 mb-2">
@@ -77,7 +77,7 @@ export default async function Dashboard() {
             </div>
 
             {/* Seção adicional baseada no tipo de usuário */}
-            <div className="mt-8">
+            <div className="mt-8 flex-1">
                 <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">
                         Área Específica - {session.user.userType}
