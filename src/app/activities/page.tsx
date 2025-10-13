@@ -208,36 +208,23 @@ export default function ActivitiesPage() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
-            {/* Header */}
+        <div className="bg-gray-50 min-h-screen">
+            {/* Header da página - mais simples */}
             <div className="bg-white shadow-sm border-b border-gray-200">
-
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-
-                    <div className="flex items-center justify-between py-6">
-
-                        {/* Logo no canto esquerdo */}
-                        <div className="flex-shrink-0">
-                            <Logo />
-                        </div>
-
-                        {/* Título centralizado */}
-                        <div className="flex-1 text-center">
-                            <h1 className="text-3xl font-bold text-gray-900">Atividades</h1>
+                    <div className="flex items-center justify-between py-4">
+                        <div>
+                            <h1 className="text-2xl font-bold text-gray-900">Atividades</h1>
                             <p className="mt-1 text-sm text-gray-600">
                                 Gerencie suas atividades e convites
                             </p>
                         </div>
-
-                        {/* Botão no canto direito */}
-                        <div className="flex-shrink-0">
-                            <Link href="/activities/create">
-                                <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-800 transition-colors flex items-center gap-2">
-                                    <Plus className="w-4 h-4" />
-                                    Nova Atividade
-                                </button>
-                            </Link>
-                        </div>
+                        <Link href="/activities/create">
+                            <button className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-4 py-2 rounded-lg font-medium hover:from-purple-700 hover:to-pink-800 transition-colors flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                Nova Atividade
+                            </button>
+                        </Link>
                     </div>
                 </div>
             </div>
