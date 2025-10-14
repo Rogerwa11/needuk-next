@@ -3,6 +3,10 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
+import { useForm, useApi } from '@/hooks/custom';
+import { commonSchemas } from '@/utils/validation-helpers';
+import { showSuccess, showError } from '@/components/ui';
+import { cardStyles } from '@/constants/styles';
 import {
     User,
     MapPin,
@@ -22,15 +26,16 @@ import {
     Award
 } from 'lucide-react';
 
-// Schema para validação dos dados de perfil
+// Usar schema comum para perfil
 const profileSchema = z.object({
-    name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-    telefone: z.string().min(14, 'Telefone é obrigatório'),
+    ...commonSchemas.profile.shape,
+    // Campos específicos do perfil extendido
     endereco: z.string().min(1, 'Endereço é obrigatório'),
     cidade: z.string().min(1, 'Cidade é obrigatória'),
     estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),
     cep: z.string().min(9, 'CEP é obrigatório'),
-    // Campos específicos
+    telefone: z.string().min(14, 'Telefone é obrigatório'),
+    // Campos específicos por tipo de usuário
     curso: z.string().optional(),
     universidade: z.string().optional(),
     periodo: z.string().optional(),
@@ -83,22 +88,51 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const [formData, setFormData] = useState<ProfileData>({
-        name: user.name || '',
-        telefone: user.telefone || '',
-        endereco: user.endereco || '',
-        cidade: user.cidade || '',
-        estado: user.estado || '',
-        cep: user.cep || '',
-        curso: user.curso || '',
-        universidade: user.universidade || '',
-        periodo: user.periodo || '',
-        nomeEmpresa: user.nomeEmpresa || '',
-        cargo: user.cargo || '',
-        setor: user.setor || '',
-        nomeUniversidade: user.nomeUniversidade || '',
-        departamento: user.departamento || '',
-        cargoGestor: user.cargoGestor || '',
+    // Hook de formulário com validação
+    const form = useForm<ProfileData>({
+        initialValues: {
+            name: user.name || '',
+            telefone: user.telefone || '',
+            endereco: user.endereco || '',
+            cidade: user.cidade || '',
+            estado: user.estado || '',
+            cep: user.cep || '',
+            curso: user.curso || '',
+            universidade: user.universidade || '',
+            periodo: user.periodo || '',
+            nomeEmpresa: user.nomeEmpresa || '',
+            cargo: user.cargo || '',
+            setor: user.setor || '',
+            nomeUniversidade: user.nomeUniversidade || '',
+            departamento: user.departamento || '',
+            cargoGestor: user.cargoGestor || '',
+        },
+        validationSchema: profileSchema,
+        onSuccess: () => {
+            showSuccess('Perfil atualizado com sucesso!');
+        },
+        onError: (error) => showError(error || 'Erro ao atualizar perfil')
+    });
+
+    // Estado para dados do formulário (compatibilidade)
+    const [formData, setFormData] = useState<ProfileData>(form.values);
+
+    // Hook para atualização do perfil
+    const updateProfileApi = useApi({
+        onSuccess: () => {
+            showSuccess('Perfil atualizado com sucesso!');
+        },
+        onError: (error) => showError(error || 'Erro ao atualizar perfil')
+    });
+
+    // Hook para upload de imagem
+    const uploadImageApi = useApi({
+        onSuccess: (data) => {
+            showSuccess('Imagem atualizada com sucesso!');
+            // Recarregar a página para mostrar a nova imagem
+            window.location.reload();
+        },
+        onError: (error) => showError(error || 'Erro ao fazer upload da imagem')
     });
 
     // Função para mostrar toast
@@ -128,65 +162,50 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
         return response.json();
     };
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleSubmit = async (values: ProfileData) => {
+        // Se há imagem selecionada, fazer upload primeiro
+        let imageUrl = user.image;
+        if (selectedImage) {
+            const formDataImage = new FormData();
+            formDataImage.append('image', selectedImage);
 
-        try {
-            profileSchema.parse(formData);
-            setErrors({});
-        } catch (error) {
-            if (error instanceof z.ZodError) {
-                const newErrors: Record<string, string> = {};
-                error.issues.forEach((err) => {
-                    if (err.path.length > 0) {
-                        newErrors[err.path[0] as string] = err.message;
-                    }
-                });
-                setErrors(newErrors);
-            }
-            return;
-        }
-
-        setLoading(true);
-
-        try {
-            // Se há imagem selecionada, fazer upload primeiro
-            let imageUrl = user.image;
-            if (selectedImage) {
-                const formDataImage = new FormData();
-                formDataImage.append('image', selectedImage);
-
-                const uploadResponse = await fetch('/api/profile/upload-image', {
+            const uploadSuccess = await uploadImageApi.execute(() =>
+                fetch('/api/profile/upload-image', {
                     method: 'POST',
                     body: formDataImage,
-                });
+                }).then(res => res.json())
+            );
 
-                if (!uploadResponse.ok) {
-                    throw new Error('Erro ao fazer upload da imagem');
-                }
-
-                const uploadData = await uploadResponse.json();
-                imageUrl = uploadData.imageUrl;
+            if (uploadSuccess) {
+                // A função onSuccess do uploadImageApi já recarrega a página
+                return;
             }
+        }
 
-            // Atualizar perfil com dados + imagem
-            await updateProfile({
-                ...formData,
-                image: imageUrl || undefined
-            });
+        // Atualizar perfil com dados
+        updateProfileApi.execute(() =>
+            fetch('/api/profile', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    ...values,
+                    image: imageUrl || undefined
+                }),
+            }).then(res => res.json())
+        );
 
-            showToastMessage('Perfil atualizado com sucesso!', 'success');
-            // Limpar estado da imagem
-            setSelectedImage(null);
-            setImagePreview(null);
-            // Recarregar a página para mostrar os dados atualizados
-            setTimeout(() => {
-                router.refresh();
-            }, 1000);
-        } catch (error) {
-            showToastMessage('Erro ao atualizar perfil. Tente novamente.', 'error');
-        } finally {
-            setLoading(false);
+        // Limpar estado da imagem após sucesso
+        setSelectedImage(null);
+        setImagePreview(null);
+    };
+
+    // Wrapper para compatibilidade
+    const handleFormSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (await form.validate()) {
+            await handleSubmit(form.values);
         }
     };
 
@@ -381,9 +400,9 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                 </div>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-8">
+            <form onSubmit={handleFormSubmit} className="space-y-8">
                 {/* Informações Básicas */}
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div className={`${cardStyles.base} ${cardStyles.padding}`}>
                     <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
                         <User className="w-5 h-5" />
                         Informações Básicas
@@ -574,7 +593,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                 </div>
 
                 {/* Informações de Endereço */}
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div className={`${cardStyles.base} ${cardStyles.padding}`}>
                     <h2 className="text-xl font-semibold text-gray-800 mb-6 flex items-center gap-2">
                         <MapPin className="w-5 h-5" />
                         Endereço
@@ -673,10 +692,10 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                 <div className="flex justify-end">
                     <button
                         type="submit"
-                        disabled={loading}
+                        disabled={updateProfileApi.loading}
                         className="bg-gradient-to-r from-purple-600 to-pink-600 text-white py-3 px-8 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
                     >
-                        {loading ? (
+                        {updateProfileApi.loading ? (
                             <>
                                 <Loader className="w-5 h-5 animate-spin" />
                                 Salvando...

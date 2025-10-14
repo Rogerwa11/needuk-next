@@ -347,13 +347,13 @@ export default function SignupPage() {
                                             value={formData.name}
                                             onChange={(e) => handleInputChange('name', e.target.value)}
                                             placeholder="Seu nome completo"
-                                            className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.nome ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                                            className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.name ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
                                                 }`}
                                         />
-                                        {errors.nome && (
+                                        {errors.name && (
                                             <p className="text-red-500 text-sm flex items-center gap-1">
                                                 <AlertCircle className="h-4 w-4" />
-                                                {errors.nome}
+                                                {errors.name}
                                             </p>
                                         )}
                                     </div>

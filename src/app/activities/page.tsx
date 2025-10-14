@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { Logo } from '@/app/_components/logo';
 import { showSuccess, showError, confirmWarning } from '@/components/ui';
+import { useApi } from '@/hooks/custom';
 
 import {
     Plus,
@@ -54,26 +55,33 @@ export default function ActivitiesPage() {
     const { user, loading: authLoading, isAuthenticated } = useAuth();
     const router = useRouter();
     const [activities, setActivities] = useState<Activity[]>([]);
-    const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState<'all' | 'created' | 'participating'>('all');
     const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'completed'>('all');
     const [searchTerm, setSearchTerm] = useState('');
     const [menuOpen, setMenuOpen] = useState<string | null>(null);
 
+    // API hooks
+    const fetchActivitiesApi = useApi({
+        onSuccess: (data) => {
+            const activitiesData = data.success ? data.data.activities : data.activities;
+            setActivities(activitiesData);
+        },
+        onError: (error) => console.error('Erro ao buscar atividades:', error)
+    });
+
+    const leaveActivityApi = useApi({
+        onSuccess: () => {
+            showSuccess('Você abandonou a atividade com sucesso.');
+            setTimeout(() => {
+                fetchActivitiesApi.execute(() => fetch('/api/activities').then(res => res.json()));
+            }, 500);
+        },
+        onError: () => showError('Erro ao abandonar atividade')
+    });
+
     // Buscar atividades
-    const fetchActivities = async () => {
-        try {
-            const response = await fetch('/api/activities');
-            if (response.ok) {
-                const result = await response.json();
-                const activitiesData = result.success ? result.data.activities : result.activities;
-                setActivities(activitiesData);
-            }
-        } catch (error) {
-            console.error('Erro ao buscar atividades:', error);
-        } finally {
-            setLoading(false);
-        }
+    const fetchActivities = () => {
+        fetchActivitiesApi.execute(() => fetch('/api/activities').then(res => res.json()));
     };
 
     // Funções do menu de ações
@@ -93,28 +101,13 @@ export default function ActivitiesPage() {
             return;
         }
 
-        try {
-            const response = await fetch(`/api/activities/${activityId}/leave`, {
+        leaveActivityApi.execute(() =>
+            fetch(`/api/activities/${activityId}/leave`, {
                 method: 'DELETE',
-            });
+            }).then(res => res.json())
+        );
 
-            const data = await response.json();
-
-            if (response.ok) {
-                showSuccess('Você abandonou a atividade com sucesso.');
-                // Aguardar um momento para garantir que a transação seja processada
-                setTimeout(() => {
-                    fetchActivities(); // Recarregar lista
-                }, 500);
-            } else {
-                showError(data.error || 'Erro ao abandonar atividade');
-            }
-        } catch (error) {
-            console.error('Erro ao abandonar atividade:', error);
-            showError('Erro ao abandonar atividade');
-        } finally {
-            setMenuOpen(null);
-        }
+        setMenuOpen(null);
     };
 
     const toggleMenu = (activityId: string) => {
@@ -194,7 +187,7 @@ export default function ActivitiesPage() {
         }
     };
 
-    if (authLoading || loading) {
+    if (authLoading || fetchActivitiesApi.loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -266,7 +259,7 @@ export default function ActivitiesPage() {
                                 placeholder="Buscar atividades..."
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                className="text-black w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
                             />
                         </div>
                     </div>

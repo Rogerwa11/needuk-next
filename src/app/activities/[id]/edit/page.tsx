@@ -18,6 +18,8 @@ import {
     UserPlus
 } from 'lucide-react';
 import { Input, showSuccess, showError, showWarning, confirmDanger } from '@/components/ui';
+import { useApi, useFormValidation } from '@/hooks/custom';
+import { commonSchemas } from '@/utils/validation-helpers';
 
 interface Link {
     id: string;
@@ -66,8 +68,6 @@ export default function EditActivityPage() {
     const router = useRouter();
     const [activity, setActivity] = useState<Activity | null>(null);
     const [currentUser, setCurrentUser] = useState<User | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
     const [errors, setErrors] = useState<Record<string, string>>({});
 
     // Estados para gerenciamento de participantes
@@ -87,54 +87,78 @@ export default function EditActivityPage() {
         links: [] as Link[]
     });
 
+    // API hooks
+    const fetchActivityApi = useApi({
+        onSuccess: (data) => {
+            const activityData = data.success ? data.data.activity : data.activity;
+            setActivity(activityData);
+
+            // Preencher formulário com dados existentes
+            setFormData({
+                title: activityData.title,
+                description: activityData.description || '',
+                status: activityData.status,
+                startDate: new Date(activityData.startDate).toISOString().slice(0, 16),
+                endDate: activityData.endDate ? new Date(activityData.endDate).toISOString().slice(0, 16) : '',
+                links: activityData.links || []
+            });
+        }
+    });
+
+    const fetchCurrentUserApi = useApi({
+        onSuccess: (data) => {
+            const userData = data.success ? data.data.user : data.user;
+            setCurrentUser(userData);
+        }
+    });
+
+    const saveActivityApi = useApi({
+        onSuccess: () => {
+            showSuccess('Atividade atualizada com sucesso!');
+            router.push(`/activities/${activityId}`);
+        },
+        onError: (error) => showError(error || 'Erro ao salvar atividade')
+    });
+
+    const inviteParticipantsApi = useApi({
+        onSuccess: () => {
+            showSuccess(`Convites enviados com sucesso para ${participantEmails.filter(email => email.trim() !== '').length} participante(s)!`);
+            setShowParticipantManagement(false);
+            setParticipantEmails(['']);
+            fetchActivityApi.execute(() => fetch(`/api/activities/${activityId}`).then(res => res.json()));
+        },
+        onError: (error) => showError(error || 'Erro ao enviar convites')
+    });
+
+    const removeParticipantApi = useApi({
+        onSuccess: (data) => {
+            // participantUser não está disponível aqui, vamos buscar da resposta
+            showSuccess('Participante removido da atividade');
+            fetchActivityApi.execute(() => fetch(`/api/activities/${activityId}`).then(res => res.json()));
+        },
+        onError: () => showError('Erro ao remover participante')
+    });
+
+    // Hook de validação
+    const { validate } = useFormValidation({
+        schema: commonSchemas.activity,
+        onError: setErrors
+    });
+
     // Buscar dados da atividade
-    const fetchActivity = async () => {
-        try {
-            const response = await fetch(`/api/activities/${activityId}`);
-            if (response.ok) {
-                const result = await response.json();
-                const activityData = result.success ? result.data.activity : result.activity;
-
-                setActivity(activityData);
-
-                // Preencher formulário com dados existentes
-                setFormData({
-                    title: activityData.title,
-                    description: activityData.description || '',
-                    status: activityData.status,
-                    startDate: new Date(activityData.startDate).toISOString().slice(0, 16),
-                    endDate: activityData.endDate ? new Date(activityData.endDate).toISOString().slice(0, 16) : '',
-                    links: activityData.links || []
-                });
-            } else {
-                console.error('Erro ao buscar atividade');
-                router.push('/activities');
-            }
-        } catch (error) {
-            console.error('Erro ao buscar atividade:', error);
-            router.push('/activities');
-        }
+    const fetchActivity = () => {
+        fetchActivityApi.execute(() => fetch(`/api/activities/${activityId}`).then(res => res.json()));
     };
 
-    // Buscar dados do usuário atual
-    const fetchCurrentUser = async () => {
-        try {
-            const response = await fetch('/api/profile');
-            if (response.ok) {
-                const result = await response.json();
-                const userData = result.success ? result.data.user : result.user;
-                setCurrentUser(userData);
-            }
-        } catch (error) {
-            console.error('Erro ao buscar usuário:', error);
-        }
+    // Buscar usuário atual
+    const fetchCurrentUser = () => {
+        fetchCurrentUserApi.execute(() => fetch('/api/profile').then(res => res.json()));
     };
+
 
     useEffect(() => {
         const loadData = async () => {
-            setLoading(true);
             await Promise.all([fetchActivity(), fetchCurrentUser()]);
-            setLoading(false);
         };
         loadData();
     }, [activityId]);
@@ -148,6 +172,13 @@ export default function EditActivityPage() {
     };
 
     const updateParticipantEmail = (index: number, email: string) => {
+        // Validar email se não estiver vazio
+        if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+            setErrors(prev => ({ ...prev, [`participant_${index}`]: 'Email inválido' }));
+        } else {
+            setErrors(prev => ({ ...prev, [`participant_${index}`]: '' }));
+        }
+
         setParticipantEmails(prev => prev.map((currentEmail, i) =>
             i === index ? email : currentEmail
         ));
@@ -256,100 +287,54 @@ export default function EditActivityPage() {
         }));
     };
 
-    // Validação do formulário
-    const validateForm = (): boolean => {
-        const newErrors: Record<string, string> = {};
+    // Validação do formulário usando commonSchemas
+    const validateForm = async (): Promise<boolean> => {
+        // Preparar dados para validação (remover campos que não fazem parte do schema)
+        const validationData = {
+            title: formData.title,
+            description: formData.description,
+            startDate: formData.startDate,
+            endDate: formData.endDate || undefined,
+            participantEmails: [], // Não validamos participantes na edição
+            links: formData.links.map(link => ({
+                title: link.title,
+                url: link.url
+            }))
+        };
 
-        if (!formData.title.trim()) {
-            newErrors.title = 'Título é obrigatório';
-        }
-
-        if (!formData.startDate) {
-            newErrors.startDate = 'Data de início é obrigatória';
-        } else {
-            const startDate = new Date(formData.startDate);
-            if (isNaN(startDate.getTime())) {
-                newErrors.startDate = 'Data de início inválida';
-            }
-        }
-
-        if (formData.endDate) {
-            const endDate = new Date(formData.endDate);
-            if (isNaN(endDate.getTime())) {
-                newErrors.endDate = 'Data de fim inválida';
-            } else if (formData.startDate) {
-                const startDate = new Date(formData.startDate);
-                if (endDate <= startDate) {
-                    newErrors.endDate = 'Data de fim deve ser posterior à data de início';
-                }
-            }
-        }
-
-        // Validar links
-        formData.links.forEach((link, index) => {
-            if (link.title.trim() || link.url.trim()) {
-                if (!link.title.trim()) {
-                    newErrors[`link_title_${index}`] = 'Título do link é obrigatório';
-                }
-                if (!link.url.trim()) {
-                    newErrors[`link_url_${index}`] = 'URL do link é obrigatória';
-                } else {
-                    try {
-                        new URL(link.url.trim());
-                    } catch {
-                        newErrors[`link_url_${index}`] = 'URL inválida';
-                    }
-                }
-            }
-        });
-
-        setErrors(newErrors);
-        return Object.keys(newErrors).length === 0;
+        const isValid = await validate(validationData);
+        return isValid;
     };
 
     // Salvar alterações
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!validateForm()) {
+        if (!(await validateForm())) {
             return;
         }
 
-        setSaving(true);
+        // Preparar dados para envio
+        const updateData = {
+            title: formData.title.trim(),
+            description: formData.description.trim() || null,
+            status: formData.status,
+            startDate: formData.startDate,
+            endDate: formData.endDate || null,
+        };
 
-        try {
-            // Preparar dados para envio
-            const updateData = {
-                title: formData.title.trim(),
-                description: formData.description.trim() || null,
-                status: formData.status,
-                startDate: formData.startDate,
-                endDate: formData.endDate || null,
-            };
-
-            const response = await fetch(`/api/activities/${activityId}`, {
+        saveActivityApi.execute(() =>
+            fetch(`/api/activities/${activityId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(updateData),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                router.push(`/activities/${activityId}`);
-            } else {
-                setErrors({ submit: data.error || 'Erro ao salvar alterações' });
-            }
-        } catch (error) {
-            setErrors({ submit: 'Erro de conexão. Tente novamente.' });
-        } finally {
-            setSaving(false);
-        }
+            }).then(res => res.json())
+        );
     };
 
-    if (loading) {
+    if (fetchActivityApi.loading || fetchCurrentUserApi.loading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
@@ -636,6 +621,7 @@ export default function EditActivityPage() {
                                                 placeholder="email@exemplo.com"
                                                 value={email}
                                                 onChange={(e) => updateParticipantEmail(index, e.target.value)}
+                                                error={errors[`participant_${index}`]}
                                                 className="flex-1 text-sm"
                                             />
                                             {participantEmails.length > 1 && (
@@ -712,10 +698,10 @@ export default function EditActivityPage() {
 
                         <button
                             type="submit"
-                            disabled={saving}
+                            disabled={saveActivityApi.loading}
                             className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-6 py-3 rounded-lg font-medium hover:from-purple-700 hover:to-pink-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         >
-                            {saving ? (
+                            {saveActivityApi.loading ? (
                                 <>
                                     <Loader className="w-4 h-4 animate-spin" />
                                     Salvando...

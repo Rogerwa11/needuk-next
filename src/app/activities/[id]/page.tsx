@@ -574,7 +574,7 @@ export default function ActivityDetailPage() {
                                         </button>
                                     )}
 
-                                    {isParticipant && currentUser?.userType === 'gestor' && (
+                                    {isParticipant && (currentUser?.userType === 'gestor' || isLeader) && (
                                         <button
                                             onClick={() => {
                                                 setShowMedalAward(!showMedalAward);
@@ -655,8 +655,8 @@ export default function ActivityDetailPage() {
                             </div>
                         )}
 
-                        {/* Ações do gestor (participante) */}
-                        {isParticipant && currentUser?.userType === 'gestor' && (
+                        {/* Ações do gestor/líder (participante) */}
+                        {isParticipant && (currentUser?.userType === 'gestor' || isLeader) && (
                             <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => setShowMedalAward(!showMedalAward)}
@@ -921,7 +921,7 @@ export default function ActivityDetailPage() {
                                         />
                                         <Input
                                             type="url"
-                                            placeholder="URL do link"
+                                            placeholder="https://exemplo.com"
                                             value={newLink.url}
                                             onChange={(e) => setNewLink(prev => ({ ...prev, url: e.target.value }))}
                                             className="text-sm"

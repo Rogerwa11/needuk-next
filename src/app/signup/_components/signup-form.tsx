@@ -3,13 +3,18 @@ import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 
 import { authClient } from '@/lib/auth-client';
+import { useForm, useApi } from '@/hooks/custom';
+import { commonSchemas, validationUtils } from '@/utils/validation-helpers';
+import { showSuccess, showError } from '@/components/ui';
 
 export type UserType = 'aluno' | 'recrutador' | 'gestor';
 
 // Schema base comum (sem refinements)
 const baseFields = {
     userType: z.enum(['aluno', 'recrutador', 'gestor']),
-    name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+    name: z.string()
+        .min(2, 'Nome deve ter pelo menos 2 caracteres')
+        .refine((name) => name.trim().split(' ').length >= 2, 'Digite seu nome completo (nome e sobrenome)'),
     email: z.string().email('Email inválido'),
     password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
     confirmPassword: z.string(),
@@ -20,64 +25,15 @@ const baseFields = {
     cep: z.string().min(9, 'CEP é obrigatório'),
 };
 
-// Função auxiliar para validar CPF
-const validateCPF = (cpf: string) => {
-    const cleanCPF = cpf.replace(/\D/g, '');
-    if (cleanCPF.length !== 11) return false;
-    if (/^(\d)\1+$/.test(cleanCPF)) return false;
-
-    let sum = 0;
-    for (let i = 0; i < 9; i++) {
-        sum += parseInt(cleanCPF.charAt(i)) * (10 - i);
-    }
-    let remainder = sum % 11;
-    let firstDigit = remainder < 2 ? 0 : 11 - remainder;
-
-    if (parseInt(cleanCPF.charAt(9)) !== firstDigit) return false;
-
-    sum = 0;
-    for (let i = 0; i < 10; i++) {
-        sum += parseInt(cleanCPF.charAt(i)) * (11 - i);
-    }
-    remainder = sum % 11;
-    let secondDigit = remainder < 2 ? 0 : 11 - remainder;
-
-    return parseInt(cleanCPF.charAt(10)) === secondDigit;
-};
-
-// Função auxiliar para validar CNPJ
-const validateCNPJ = (cnpj: string) => {
-    const cleanCNPJ = cnpj.replace(/\D/g, '');
-    if (cleanCNPJ.length !== 14) return false;
-    if (/^(\d)\1+$/.test(cleanCNPJ)) return false;
-
-    const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    let sum = 0;
-    for (let i = 0; i < 12; i++) {
-        sum += parseInt(cleanCNPJ.charAt(i)) * weights1[i];
-    }
-    let remainder = sum % 11;
-    let firstDigit = remainder < 2 ? 0 : 11 - remainder;
-
-    if (parseInt(cleanCNPJ.charAt(12)) !== firstDigit) return false;
-
-    const weights2 = [6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
-    sum = 0;
-    for (let i = 0; i < 13; i++) {
-        sum += parseInt(cleanCNPJ.charAt(i)) * weights2[i];
-    }
-    remainder = sum % 11;
-    let secondDigit = remainder < 2 ? 0 : 11 - remainder;
-
-    return parseInt(cleanCNPJ.charAt(13)) === secondDigit;
-};
+// Usar funções de validação centralizadas
+const { isValidCPF, isValidCNPJ } = validationUtils;
 
 // Schema específico para aluno
 const alunoSchema = z.object({
     ...baseFields,
     cpf: z.string()
         .min(14, 'CPF é obrigatório')
-        .refine(validateCPF, 'CPF inválido'),
+        .refine(isValidCPF, 'CPF inválido'),
     curso: z.string().min(1, 'Curso é obrigatório'),
     universidade: z.string().min(1, 'Universidade é obrigatória'),
     periodo: z.string().min(1, 'Período é obrigatório'),
@@ -107,11 +63,11 @@ const recrutadorSchema = z.object({
 }).refine((data) => {
     // Validar CPF se preenchido
     if (data.cpf && data.cpf.length === 14) {
-        return validateCPF(data.cpf);
+        return isValidCPF(data.cpf);
     }
     // Validar CNPJ se preenchido
     if (data.cnpj && data.cnpj.length === 18) {
-        return validateCNPJ(data.cnpj);
+        return isValidCNPJ(data.cnpj);
     }
     return true;
 }, {
@@ -140,11 +96,11 @@ const gestorSchema = z.object({
 }).refine((data) => {
     // Validar CPF se preenchido
     if (data.cpf && data.cpf.length === 14) {
-        return validateCPF(data.cpf);
+        return isValidCPF(data.cpf);
     }
     // Validar CNPJ se preenchido
     if (data.cnpj && data.cnpj.length === 18) {
-        return validateCNPJ(data.cnpj);
+        return isValidCNPJ(data.cnpj);
     }
     return true;
 }, {
@@ -185,13 +141,39 @@ export const useSignupForm = () => {
     const [isHydrated, setIsHydrated] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
     const [currentStep, setCurrentStep] = useState(1);
     const [showToast, setShowToast] = useState(false);
     const [toastMessage, setToastMessage] = useState('');
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showPlansPopup, setShowPlansPopup] = useState(false);
     const [selectedPlanLoading, setSelectedPlanLoading] = useState<PlanType | null>(null);
+
+    // Hook para signup
+    const signupApi = useApi({
+        onSuccess: (data) => {
+            showToastMessage('Conta criada com sucesso! Redirecionando...', 'success');
+            setTimeout(() => {
+                router.push('/login');
+            }, 2000);
+        },
+        onError: (error) => {
+            // Tratar erros específicos
+            if (error.includes('EMAIL_ALREADY_EXISTS') ||
+                error.includes('Email already exists') ||
+                error.includes('email already registered') ||
+                error.includes('already exists')) {
+                showToastMessage('Este email já está cadastrado. Tente fazer login.', 'error');
+            } else if (error.includes('INVALID_EMAIL') ||
+                       error.includes('Invalid email')) {
+                showToastMessage('Email inválido. Verifique e tente novamente.', 'error');
+            } else if (error.includes('WEAK_PASSWORD') ||
+                       error.includes('Password is too weak')) {
+                showToastMessage('Senha muito fraca. Use pelo menos 8 caracteres.', 'error');
+            } else {
+                showToastMessage(error || 'Erro ao criar conta. Tente novamente.', 'error');
+            }
+        }
+    });
 
     const [formData, setFormData] = useState<FormData>({
         userType: 'aluno',
@@ -388,7 +370,9 @@ export const useSignupForm = () => {
         try {
             if (currentStep === 1) {
                 const step1Schema = z.object({
-                    name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
+                    name: z.string()
+                        .min(2, 'Nome deve ter pelo menos 2 caracteres')
+                        .refine((name) => name.trim().split(' ').length >= 2, 'Digite seu nome completo (nome e sobrenome)'),
                     email: z.string().email('Email inválido'),
                     password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
                     confirmPassword: z.string(),
@@ -422,7 +406,7 @@ export const useSignupForm = () => {
 
                 const step2Schema = formData.userType === 'aluno'
                     ? z.object({
-                        cpf: z.string().min(14, 'CPF é obrigatório').refine(validateCPF, 'CPF inválido'),
+                        cpf: z.string().min(14, 'CPF é obrigatório').refine(isValidCPF, 'CPF inválido'),
                         telefone: z.string().min(14, 'Telefone é obrigatório'),
                         endereco: z.string().min(1, 'Endereço é obrigatório'),
                         cidade: z.string().min(1, 'Cidade é obrigatória'),
@@ -445,11 +429,11 @@ export const useSignupForm = () => {
                     }).refine((data) => {
                         // Validar CPF se preenchido
                         if (data.cpf && data.cpf.length === 14) {
-                            return validateCPF(data.cpf);
+                            return isValidCPF(data.cpf);
                         }
                         // Validar CNPJ se preenchido
                         if (data.cnpj && data.cnpj.length === 18) {
-                            return validateCNPJ(data.cnpj);
+                            return isValidCNPJ(data.cnpj);
                         }
                         return true;
                     }, {
@@ -511,11 +495,8 @@ export const useSignupForm = () => {
     };
 
     const createAccount = async (plan: PlanType) => {
-        setLoading(true);
-
-        try {
-
-            await authClient.signUp.email({
+        const success = await signupApi.execute(async () => {
+            const result = await authClient.signUp.email({
                 email: formData.email,
                 name: formData.name,
                 password: formData.password,
@@ -546,24 +527,23 @@ export const useSignupForm = () => {
                     departamento: formData.departamento || '',
                     cargoGestor: formData.cargoGestor || ''
                 })
-            }, {
-                //onRequest: () => { },
-                onSuccess: (ctx) => {
-                    showToastMessage('Conta criada com sucesso!', 'success');
-                    router.push('/login');
-                },
-                onError: (ctx) => {
-                    if (ctx.error.code === 'USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL') {
-                        showToastMessage(`O Email ${formData.email} já foi cadastrado. Tente outro.`, 'error');
-                    } else {
-                        showToastMessage('Erro ao criar conta. Tente novamente.', 'error');
-                    }
-                },
             });
-        } catch (error) {
-            showToastMessage('Erro ao criar conta. Tente novamente.', 'error');
-        } finally {
-            setLoading(false);
+
+            // Verificar se houve erro na criação da conta
+            if (result?.error) {
+                throw new Error(result.error.message || 'Erro ao criar conta');
+            }
+
+            // Verificar se a criação foi bem-sucedida
+            if (!result?.data) {
+                throw new Error('Erro ao criar conta');
+            }
+
+            return result;
+        });
+
+        if (success) {
+            // O callback onSuccess do signupApi já trata o sucesso
         }
     };
 
@@ -640,7 +620,7 @@ export const useSignupForm = () => {
         setShowPassword,
         showConfirmPassword,
         setShowConfirmPassword,
-        loading,
+        loading: signupApi.loading,
         currentStep,
         showToast,
         toastMessage,

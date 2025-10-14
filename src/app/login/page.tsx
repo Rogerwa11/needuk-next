@@ -10,24 +10,19 @@ export default function LoginPage() {
     const { user: user, loading: authLoading } = useAuthRedirect('/dashboard');
 
     const {
-        // Estados
+        // Estados do formulário
+        form,
+
+        // Estados adicionais
         showPassword,
         setShowPassword,
         email,
-        password,
         loading,
-        errors,
         isEmailValid,
-        showToast,
-        toastMessage,
-        toastType,
         emailRef,
 
         // Handlers
         handleSubmit,
-        handleKeyDown,
-        handleEmailChange,
-        handlePasswordChange,
     } = useLoginForm();
 
     if (authLoading || user) {
@@ -37,18 +32,6 @@ export default function LoginPage() {
     if (!user && !authLoading) {
         return (
             <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-                {/* Toast Notification */}
-                <div className={`fixed top-4 right-4 z-50 transition-all duration-300 transform ${showToast ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
-                    }`}>
-                    <div className={`px-6 py-3 rounded-lg shadow-lg flex items-center gap-2 ${toastType === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
-                        }`}>
-                        {toastType === 'success' ?
-                            <CheckCircle className="h-5 w-5" /> :
-                            <XCircle className="h-5 w-5" />
-                        }
-                        {toastMessage}
-                    </div>
-                </div>
 
                 <div className="max-w-md w-full bg-white rounded-2xl shadow-xl overflow-hidden">
                     <div className="p-8 md:p-10">
@@ -66,7 +49,7 @@ export default function LoginPage() {
                             Faça login para acessar sua conta
                         </p>
 
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={form.handleSubmit} className="space-y-6">
                             {/* Email */}
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">Email</label>
@@ -74,13 +57,17 @@ export default function LoginPage() {
                                     <input
                                         ref={emailRef}
                                         type="email"
-                                        value={email}
-                                        onChange={(e) => handleEmailChange(e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(e, () => document.getElementById('password')?.focus())}
+                                        {...form.getFieldProps('email')}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                document.getElementById('password')?.focus();
+                                            }
+                                        }}
                                         placeholder="seu@email.com"
-                                        className={`w-full text-black px-4 py-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.email
+                                        className={`w-full text-black px-4 py-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.email
                                             ? 'border-red-500 focus:ring-red-500'
-                                            : isEmailValid && email
+                                            : isEmailValid && form.values.email
                                                 ? 'border-green-500 focus:ring-green-500'
                                                 : 'border-gray-300 focus:ring-purple-500'
                                             }`}
@@ -95,10 +82,10 @@ export default function LoginPage() {
                                         </div>
                                     )}
                                 </div>
-                                {errors.email && (
+                                {form.errors.email && (
                                     <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                         <AlertCircle className="h-4 w-4" />
-                                        {errors.email}
+                                        {form.errors.email}
                                     </p>
                                 )}
                             </div>
@@ -110,11 +97,15 @@ export default function LoginPage() {
                                     <input
                                         id="password"
                                         type={showPassword ? "text" : "password"}
-                                        value={password}
-                                        onChange={(e) => handlePasswordChange(e.target.value)}
-                                        onKeyDown={(e) => handleKeyDown(e, () => handleSubmit(e as any))}
+                                        {...form.getFieldProps('password')}
+                                        onKeyDown={(e) => {
+                                            if (e.key === 'Enter') {
+                                                e.preventDefault();
+                                                form.handleSubmit();
+                                            }
+                                        }}
                                         placeholder="••••••••"
-                                        className={`w-full text-black px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
+                                        className={`w-full text-black px-4 py-3 pr-12 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.password ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
                                             }`}
                                     />
                                     <button
@@ -125,10 +116,10 @@ export default function LoginPage() {
                                         {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                                     </button>
                                 </div>
-                                {errors.password && (
+                                {form.errors.password && (
                                     <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                         <AlertCircle className="h-4 w-4" />
-                                        {errors.password}
+                                        {form.errors.password}
                                     </p>
                                 )}
                             </div>
@@ -146,7 +137,7 @@ export default function LoginPage() {
                             {/* Botão de Login */}
                             <button
                                 type="submit"
-                                disabled={loading || !isEmailValid || !password || errors.password !== ''}
+                                disabled={loading || !isEmailValid || !form.values.password || !!form.errors.password}
                                 className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-3 px-4 rounded-lg font-semibold text-lg hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition-all duration-300 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             >
                                 {loading ? (

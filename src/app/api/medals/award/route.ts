@@ -15,19 +15,28 @@ const awardMedalSchema = z.object({
 // POST - Conceder medalha
 export const POST = withAuth(async (request: AuthenticatedRequest) => {
     try {
-        // Verificar se é gestor
+        // Obter os dados do corpo da requisição primeiro
+        const body = await request.json();
+        const { medalType, userId, activityId, reason } = awardMedalSchema.parse(body);
+
+        // Verificar se é gestor ou líder da atividade
         const currentUser = await prisma.user.findUnique({
             where: { id: request.user.id },
             select: { userType: true }
         });
 
-        if (currentUser?.userType !== 'gestor') {
-            return forbiddenResponse('Apenas gestores podem premiar medalhas');
-        }
+        // Verificar se o usuário é líder da atividade
+        const activity = await prisma.activity.findUnique({
+            where: { id: activityId },
+            select: { leaderId: true }
+        });
 
-        // Obter os dados do corpo da requisição
-        const body = await request.json();
-        const { medalType, userId, activityId, reason } = awardMedalSchema.parse(body);
+        const isGestor = currentUser?.userType === 'gestor';
+        const isLeader = activity?.leaderId === request.user.id;
+
+        if (!isGestor && !isLeader) {
+            return forbiddenResponse('Apenas gestores ou líderes da atividade podem premiar medalhas');
+        }
 
         // Verificar se o usuário a receber existe e é aluno
         const recipient = await prisma.user.findUnique({

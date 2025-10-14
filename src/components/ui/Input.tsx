@@ -1,27 +1,14 @@
 import React, { forwardRef, InputHTMLAttributes, TextareaHTMLAttributes } from 'react';
 import { AlertCircle } from 'lucide-react';
 
-export interface InputProps {
+export interface InputProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'size'> {
     label?: string;
     error?: string;
     variant?: 'default' | 'primary';
     helperText?: string;
     as?: 'input' | 'textarea';
-    // Props comuns
-    className?: string;
-    disabled?: boolean;
-    placeholder?: string;
-    required?: boolean;
-    // Props específicas para input
-    type?: string;
     // Props específicas para textarea
     rows?: number;
-    // Event handlers
-    onChange?: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    onBlur?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    onFocus?: (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => void;
-    // Value
-    value?: string | number | readonly string[];
 }
 
 export const Input = forwardRef<HTMLInputElement | HTMLTextAreaElement, InputProps>(

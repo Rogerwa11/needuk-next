@@ -41,6 +41,9 @@ export const layoutStyles = {
         cols1: 'grid-cols-1',
         cols2: 'grid-cols-1 md:grid-cols-2',
         cols3: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3',
+        cols4: 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4',
+        formRow: 'grid grid-cols-1 md:grid-cols-2 gap-6',
+        formRowTight: 'grid grid-cols-1 md:grid-cols-2 gap-4',
     },
 };
 

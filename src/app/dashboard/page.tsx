@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
 import { redirect } from 'next/navigation';
+import { cardStyles, layoutStyles } from '@/constants/styles';
 
 export default async function Dashboard() {
     const session = await auth.api.getSession({
@@ -23,9 +24,9 @@ export default async function Dashboard() {
             </div>
 
             {/* Blocos Informativos */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className={`${layoutStyles.grid.cols3} gap-6`}>
                 {/* Bloco 1 */}
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className={`${cardStyles.base} ${cardStyles.padding} ${cardStyles.hover}`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-800">
                             Estatísticas Gerais
@@ -42,7 +43,7 @@ export default async function Dashboard() {
                 </div>
 
                 {/* Bloco 2 */}
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className={`${cardStyles.base} ${cardStyles.padding} ${cardStyles.hover}`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-800">
                             Atividades Recentes
@@ -59,7 +60,7 @@ export default async function Dashboard() {
                 </div>
 
                 {/* Bloco 3 */}
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow duration-300">
+                <div className={`${cardStyles.base} ${cardStyles.padding} ${cardStyles.hover}`}>
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-lg font-semibold text-gray-800">
                             Próximas Tarefas
@@ -78,7 +79,7 @@ export default async function Dashboard() {
 
             {/* Seção adicional baseada no tipo de usuário */}
             <div className="mt-8 flex-1">
-                <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-100">
+                <div className={`${cardStyles.base} ${cardStyles.padding}`}>
                     <h2 className="text-xl font-semibold text-gray-800 mb-4">
                         Área Específica - {session.user.userType}
                     </h2>

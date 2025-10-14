@@ -22,6 +22,7 @@ import {
 import { Logo } from '@/app/_components/logo';
 import { ButtonSignout } from '@/app/dashboard/_components/button-signout';
 import Footer from '@/app/_components/footer';
+import { useApi } from '@/hooks/custom';
 
 interface User {
     id: string;
@@ -58,7 +59,7 @@ const navigationItems: NavItem[] = [
         name: 'Atividades',
         href: '/activities',
         icon: BookOpen,
-        allowedUserTypes: ['aluno', 'recrutador', 'gestor']
+        allowedUserTypes: ['aluno', 'gestor']
     },
     {
         name: 'Currículo/Relatório',
@@ -76,7 +77,7 @@ const navigationItems: NavItem[] = [
         name: 'Banco de Talentos',
         href: '/talentos',
         icon: Users,
-        allowedUserTypes: ['aluno', 'recrutador', 'gestor']
+        allowedUserTypes: ['recrutador', 'gestor']
     }
 ];
 
@@ -91,79 +92,79 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
     const [notificationsOpen, setNotificationsOpen] = useState(false);
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
-    const [loading, setLoading] = useState(false);
     const pathname = usePathname();
 
+    // API hooks para notificações
+    const fetchNotificationsApi = useApi({
+        onSuccess: (data) => {
+            const result = data.success ? data.data : data;
+            setNotifications(result.notifications || []);
+            setUnreadCount(result.unreadCount || 0);
+        },
+        onError: (error) => console.error('Erro ao buscar notificações:', error)
+    });
+
+    const markAsReadApi = useApi({
+        onSuccess: (data) => {
+            // A lógica de atualização do estado precisa ser feita na chamada
+            // O notificationId não pode ser passado como parâmetro
+        },
+        onError: (error) => console.error('Erro ao marcar notificação:', error)
+    });
+
+    const respondToInvitationApi = useApi({
+        onSuccess: (data) => {
+            // Recarregar notificações após resposta
+            fetchNotificationsApi.execute(() => fetch('/api/notifications').then(res => res.json()));
+        },
+        onError: (error) => console.error('Erro ao responder convite:', error)
+    });
+
     // Buscar notificações
-    const fetchNotifications = async () => {
-        try {
-            const response = await fetch('/api/notifications');
-            if (response.ok) {
-                const result = await response.json();
-                if (result.success && result.data) {
-                    setNotifications(result.data.notifications || []);
-                    setUnreadCount(result.data.unreadCount || 0);
-                } else {
-                    // Fallback para formato antigo
-                    setNotifications(result.notifications || []);
-                    setUnreadCount(result.unreadCount || 0);
-                }
-            }
-        } catch (error) {
-            console.error('Erro ao buscar notificações:', error);
-        }
+    const fetchNotifications = () => {
+        fetchNotificationsApi.execute(() => fetch('/api/notifications').then(res => res.json()));
     };
 
     // Marcar notificação como lida
     const markAsRead = async (notificationId: string) => {
-        try {
-            const response = await fetch('/api/notifications', {
+        const success = await markAsReadApi.execute(() =>
+            fetch('/api/notifications', {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ notificationId }),
-            });
+            }).then(res => res.json())
+        );
 
-            if (response.ok) {
-                // Atualizar estado local
-                setNotifications(prev =>
-                    prev.map(notif =>
-                        notif.id === notificationId
-                            ? { ...notif, read: true }
-                            : notif
-                    )
-                );
-                setUnreadCount(prev => Math.max(0, prev - 1));
-            }
-        } catch (error) {
-            console.error('Erro ao marcar notificação como lida:', error);
+        if (success) {
+            // Atualizar estado local após sucesso
+            setNotifications(prev =>
+                prev.map(notif =>
+                    notif.id === notificationId
+                        ? { ...notif, read: true }
+                        : notif
+                )
+            );
+            setUnreadCount(prev => Math.max(0, prev - 1));
         }
     };
 
     // Responder convite
     const respondToInvitation = async (invitationId: string, action: 'accept' | 'decline') => {
-        try {
-            const response = await fetch(`/api/invitations/${invitationId}/respond`, {
+        const success = await respondToInvitationApi.execute(() =>
+            fetch(`/api/invitations/${invitationId}/respond`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({ action }),
-            });
+            }).then(res => res.json())
+        );
 
-            if (response.ok) {
-                // Recarregar notificações
-                await fetchNotifications();
-
-                // Fechar dropdown de notificações
-                setNotificationsOpen(false);
-            } else {
-                const errorData = await response.json();
-                console.error('Erro ao responder convite:', errorData.error);
-            }
-        } catch (error) {
-            console.error('Erro ao responder convite:', error);
+        if (success) {
+            // Fechar dropdown de notificações
+            setNotificationsOpen(false);
         }
     };
 
