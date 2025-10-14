@@ -158,11 +158,15 @@ export const useSignupForm = () => {
         },
         onError: (error) => {
             // Tratar erros específicos
-            if (error.includes('EMAIL_ALREADY_EXISTS') ||
+            if (error.includes('CPF já cadastrado') ||
+                error.includes('CPF já existe') ||
+                error.includes('CPF already registered')) {
+                showToastMessage('Este CPF já pertence a um usuário.', 'error');
+            } else if (error.includes('EMAIL_ALREADY_EXISTS') ||
                 error.includes('Email already exists') ||
                 error.includes('email already registered') ||
                 error.includes('already exists')) {
-                showToastMessage('Este email já está cadastrado. Tente fazer login.', 'error');
+                showToastMessage('Este email já pertence a um usuário. Tente fazer login.', 'error');
             } else if (error.includes('INVALID_EMAIL') ||
                        error.includes('Invalid email')) {
                 showToastMessage('Email inválido. Verifique e tente novamente.', 'error');
@@ -188,6 +192,18 @@ export const useSignupForm = () => {
         cidade: '',
         estado: '',
         cep: '',
+        // Campos específicos de aluno
+        curso: '',
+        universidade: '',
+        periodo: '',
+        // Campos específicos de recrutador
+        nomeEmpresa: '',
+        cargo: '',
+        setor: '',
+        // Campos específicos de gestor
+        nomeUniversidade: '',
+        departamento: '',
+        cargoGestor: '',
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -371,11 +387,17 @@ export const useSignupForm = () => {
             if (currentStep === 1) {
                 const step1Schema = z.object({
                     name: z.string()
+                        .min(1, 'Nome é obrigatório')
                         .min(2, 'Nome deve ter pelo menos 2 caracteres')
                         .refine((name) => name.trim().split(' ').length >= 2, 'Digite seu nome completo (nome e sobrenome)'),
-                    email: z.string().email('Email inválido'),
-                    password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
-                    confirmPassword: z.string(),
+                    email: z.string()
+                        .min(1, 'Email é obrigatório')
+                        .email('Email inválido'),
+                    password: z.string()
+                        .min(1, 'Senha é obrigatória')
+                        .min(8, 'Senha deve ter pelo menos 8 caracteres'),
+                    confirmPassword: z.string()
+                        .min(1, 'Confirmação de senha é obrigatória'),
                 }).refine((data) => data.password === data.confirmPassword, {
                     message: "As senhas não coincidem",
                     path: ["confirmPassword"],
@@ -495,6 +517,30 @@ export const useSignupForm = () => {
     };
 
     const createAccount = async (plan: PlanType) => {
+        // Validar unicidade do CPF se fornecido (apenas para CPF, não CNPJ)
+        if (formData.cpf && formData.cpf.length === 14) {
+            try {
+                const cpfValidationResponse = await fetch('/api/validate-cpf', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ cpf: formData.cpf }),
+                });
+
+                const cpfValidationResult = await cpfValidationResponse.json();
+
+                if (!cpfValidationResponse.ok) {
+                    throw new Error(cpfValidationResult.message || 'CPF já cadastrado no sistema');
+                }
+            } catch (error) {
+                if (error instanceof Error) {
+                    throw error;
+                }
+                throw new Error('Erro ao validar CPF');
+            }
+        }
+
         const success = await signupApi.execute(async () => {
             const result = await authClient.signUp.email({
                 email: formData.email,
