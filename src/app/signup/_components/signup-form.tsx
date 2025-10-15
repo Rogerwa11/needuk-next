@@ -4,10 +4,16 @@ import { z } from 'zod';
 
 import { authClient } from '@/lib/auth-client';
 import { useForm, useApi } from '@/hooks/custom';
+import { useUniversities, useCourses } from '@/hooks/custom/useAutocomplete';
+import { useCep, type CepData } from '@/hooks/custom/useCep';
 import { commonSchemas, validationUtils } from '@/utils/validation-helpers';
+import { allCourses } from '@/constants/courses';
 import { showSuccess, showError } from '@/components/ui';
 
 export type UserType = 'aluno' | 'recrutador' | 'gestor';
+
+// Usar funções de validação centralizadas
+const { isValidCPF, isValidCNPJ, isValidPhone } = validationUtils;
 
 // Schema base comum (sem refinements)
 const baseFields = {
@@ -18,15 +24,19 @@ const baseFields = {
     email: z.string().email('Email inválido'),
     password: z.string().min(8, 'Senha deve ter pelo menos 8 caracteres'),
     confirmPassword: z.string(),
-    telefone: z.string().min(14, 'Telefone é obrigatório'),
+    telefone: z.string()
+        .min(14, 'Telefone é obrigatório')
+        .refine((telefone) => {
+            // Remove formatação para validar
+            const cleaned = telefone.replace(/\D/g, '');
+            return cleaned.length === 10 || cleaned.length === 11; // Telefones: 10 dígitos (fixo) ou 11 dígitos (celular)
+        }, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine(isValidPhone, 'Telefone inválido'),
     endereco: z.string().min(1, 'Endereço é obrigatório'),
     cidade: z.string().min(1, 'Cidade é obrigatória'),
-    estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),
-    cep: z.string().min(9, 'CEP é obrigatório'),
+    estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres').regex(/^[A-Z]{2}$/, 'Estado deve conter apenas letras maiúsculas'),
+    cep: z.string().min(9, 'CEP é obrigatório').regex(/^\d{5}-\d{3}$/, 'CEP deve estar no formato 00000-000'),
 };
-
-// Usar funções de validação centralizadas
-const { isValidCPF, isValidCNPJ } = validationUtils;
 
 // Schema específico para aluno
 const alunoSchema = z.object({
@@ -34,7 +44,14 @@ const alunoSchema = z.object({
     cpf: z.string()
         .min(14, 'CPF é obrigatório')
         .refine(isValidCPF, 'CPF inválido'),
-    curso: z.string().min(1, 'Curso é obrigatório'),
+    curso: z.string()
+        .min(1, 'Curso é obrigatório')
+        .refine((curso) => {
+            // Verificar se o curso digitado existe na lista de cursos disponíveis
+            return allCourses.some(course =>
+                course.toLowerCase() === curso.toLowerCase().trim()
+            );
+        }, 'Selecione um curso válido da lista de sugestões'),
     universidade: z.string().min(1, 'Universidade é obrigatória'),
     periodo: z.string().min(1, 'Período é obrigatório'),
 }).refine((data) => data.password === data.confirmPassword, {
@@ -147,6 +164,13 @@ export const useSignupForm = () => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [showPlansPopup, setShowPlansPopup] = useState(false);
     const [selectedPlanLoading, setSelectedPlanLoading] = useState<PlanType | null>(null);
+
+    // Hook para busca de CEP
+    const cepHook = useCep();
+
+    // Hooks para autocomplete
+    const universitiesHook = useUniversities();
+    const coursesHook = useCourses();
 
     // Hook para signup
     const signupApi = useApi({
@@ -331,6 +355,23 @@ export const useSignupForm = () => {
             formattedValue = formatPhone(value);
         } else if (field === 'cep') {
             formattedValue = formatCEP(value);
+
+            // Buscar endereço automaticamente quando CEP estiver completo
+            const cleanCep = formattedValue.replace(/\D/g, '');
+            if (cleanCep.length === 8 && cleanCep !== formData.cep.replace(/\D/g, '')) {
+                cepHook.searchCep(cleanCep).then((cepData: CepData | null) => {
+                    if (cepData) {
+                        setFormData(prev => ({
+                            ...prev,
+                            // Só preenche o endereço se estiver vazio (permite que o usuário mantenha o que digitou)
+                            endereco: formData.endereco || `${cepData.logradouro}${cepData.complemento ? `, ${cepData.complemento}` : ''}`,
+                            cidade: cepData.localidade,
+                            estado: cepData.uf,
+                            cep: formattedValue
+                        }));
+                    }
+                });
+            }
         }
 
         setFormData(prev => ({
@@ -429,20 +470,34 @@ export const useSignupForm = () => {
                 const step2Schema = formData.userType === 'aluno'
                     ? z.object({
                         cpf: z.string().min(14, 'CPF é obrigatório').refine(isValidCPF, 'CPF inválido'),
-                        telefone: z.string().min(14, 'Telefone é obrigatório'),
+                        telefone: z.string()
+        .min(14, 'Telefone é obrigatório')
+        .refine((telefone) => {
+            // Remove formatação para validar
+            const cleaned = telefone.replace(/\D/g, '');
+            return cleaned.length === 10 || cleaned.length === 11; // Telefones: 10 dígitos (fixo) ou 11 dígitos (celular)
+        }, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine(isValidPhone, 'Telefone inválido'),
                         endereco: z.string().min(1, 'Endereço é obrigatório'),
                         cidade: z.string().min(1, 'Cidade é obrigatória'),
-                        estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),
-                        cep: z.string().min(9, 'CEP é obrigatório'),
+                        estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres').regex(/^[A-Z]{2}$/, 'Estado deve conter apenas letras maiúsculas'),
+                        cep: z.string().min(9, 'CEP é obrigatório').regex(/^\d{5}-\d{3}$/, 'CEP deve estar no formato 00000-000'),
                     })
                     : z.object({
                         cpf: z.string().optional(),
                         cnpj: z.string().optional(),
-                        telefone: z.string().min(14, 'Telefone é obrigatório'),
+                        telefone: z.string()
+        .min(14, 'Telefone é obrigatório')
+        .refine((telefone) => {
+            // Remove formatação para validar
+            const cleaned = telefone.replace(/\D/g, '');
+            return cleaned.length === 10 || cleaned.length === 11; // Telefones: 10 dígitos (fixo) ou 11 dígitos (celular)
+        }, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine(isValidPhone, 'Telefone inválido'),
                         endereco: z.string().min(1, 'Endereço é obrigatório'),
                         cidade: z.string().min(1, 'Cidade é obrigatória'),
-                        estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),
-                        cep: z.string().min(9, 'CEP é obrigatório'),
+                        estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres').regex(/^[A-Z]{2}$/, 'Estado deve conter apenas letras maiúsculas'),
+                        cep: z.string().min(9, 'CEP é obrigatório').regex(/^\d{5}-\d{3}$/, 'CEP deve estar no formato 00000-000'),
                     }).refine((data) => {
                         return (data.cpf && data.cpf.length === 14) || (data.cnpj && data.cnpj.length === 18);
                     }, {
@@ -683,6 +738,9 @@ export const useSignupForm = () => {
         strengthTexts,
         userTypeConfig,
         plansConfig,
+        cepHook,
+        universitiesHook,
+        coursesHook,
 
         // Handlers
         handleInputChange,

@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, useApi } from '@/hooks/custom';
-import { commonSchemas } from '@/utils/validation-helpers';
+import { commonSchemas, validationUtils } from '@/utils/validation-helpers';
 import { showSuccess, showError } from '@/components/ui';
 import { cardStyles } from '@/constants/styles';
 import {
@@ -34,7 +34,14 @@ const profileSchema = z.object({
     cidade: z.string().min(1, 'Cidade é obrigatória'),
     estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),
     cep: z.string().min(9, 'CEP é obrigatório'),
-    telefone: z.string().min(14, 'Telefone é obrigatório'),
+    telefone: z.string()
+        .min(14, 'Telefone é obrigatório')
+        .refine((telefone) => {
+            // Remove formatação para validar
+            const cleaned = telefone.replace(/\D/g, '');
+            return cleaned.length === 10 || cleaned.length === 11; // Telefones: 10 dígitos (fixo) ou 11 dígitos (celular)
+        }, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine(validationUtils.isValidPhone, 'Telefone inválido'),
     // Campos específicos por tipo de usuário
     curso: z.string().optional(),
     universidade: z.string().optional(),

@@ -3,11 +3,19 @@ import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 import { withAuth, validationErrorResponse, userProfileSelect, AuthenticatedRequest } from '@/lib/utils';
 import { successResponse, serverErrorResponse, notFoundResponse } from '@/lib/utils';
+import { validationUtils } from '@/utils/validation-helpers';
 
 // Schema para validação dos dados de atualização
 const updateProfileSchema = z.object({
     name: z.string().min(2, 'Nome deve ter pelo menos 2 caracteres'),
-    telefone: z.string().min(14, 'Telefone é obrigatório'),
+    telefone: z.string()
+        .min(14, 'Telefone é obrigatório')
+        .refine((telefone) => {
+            // Remove formatação para validar
+            const cleaned = telefone.replace(/\D/g, '');
+            return cleaned.length === 10 || cleaned.length === 11; // Telefones: 10 dígitos (fixo) ou 11 dígitos (celular)
+        }, 'Telefone deve ter 10 ou 11 dígitos')
+        .refine(validationUtils.isValidPhone, 'Telefone inválido'),
     endereco: z.string().min(1, 'Endereço é obrigatório'),
     cidade: z.string().min(1, 'Cidade é obrigatória'),
     estado: z.string().min(2, 'Estado é obrigatório').max(2, 'Estado deve ter 2 caracteres'),

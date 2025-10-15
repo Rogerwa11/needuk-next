@@ -6,6 +6,7 @@ import { useSignupForm, UserType, PlanType } from './_components/signup-form';
 import { useAuthRedirect } from '@/hooks/useAuth';
 import { AuthLoadingScreen } from '@/app/_components/AuthLoadingScreen';
 import { Logo } from '@/app/_components/logo';
+import { AutocompleteInput } from '@/components/ui';
 
 export default function SignupPage() {
 
@@ -35,6 +36,9 @@ export default function SignupPage() {
         strengthTexts,
         userTypeConfig,
         plansConfig,
+        cepHook,
+        universitiesHook,
+        coursesHook,
 
         // Handlers
         handleInputChange,
@@ -55,40 +59,26 @@ export default function SignupPage() {
                 case 'aluno':
                     return (
                         <>
-                            <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                <label className="text-gray-700 font-semibold">Curso</label>
-                                <input
-                                    type="text"
-                                    value={formData.curso || ''}
-                                    onChange={(e) => handleInputChange('curso', e.target.value)}
-                                    placeholder="Seu curso"
-                                    className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.curso ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
-                                />
-                                {errors.curso && (
-                                    <p className="text-red-500 text-sm flex items-center gap-1">
-                                        <AlertCircle className="h-4 w-4" />
-                                        {errors.curso}
-                                    </p>
-                                )}
-                            </div>
-                            <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                <label className="text-gray-700 font-semibold">Universidade</label>
-                                <input
-                                    type="text"
-                                    value={formData.universidade || ''}
-                                    onChange={(e) => handleInputChange('universidade', e.target.value)}
-                                    placeholder="Sua universidade"
-                                    className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.universidade ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
-                                        }`}
-                                />
-                                {errors.universidade && (
-                                    <p className="text-red-500 text-sm flex items-center gap-1">
-                                        <AlertCircle className="h-4 w-4" />
-                                        {errors.universidade}
-                                    </p>
-                                )}
-                            </div>
+                            <AutocompleteInput
+                                value={formData.curso || ''}
+                                onChange={(value) => handleInputChange('curso', value)}
+                                onSearch={coursesHook.searchCourses}
+                                suggestions={coursesHook.courses}
+                                placeholder="Digite seu curso"
+                                label="Curso"
+                                error={errors.curso}
+                                fieldType="course"
+                            />
+                            <AutocompleteInput
+                                value={formData.universidade || ''}
+                                onChange={(value) => handleInputChange('universidade', value)}
+                                onSearch={universitiesHook.searchUniversities}
+                                suggestions={universitiesHook.universities}
+                                placeholder="Digite sua universidade"
+                                label="Universidade"
+                                error={errors.universidade}
+                                fieldType="university"
+                            />
                             <div className="flex flex-col items-center gap-2 w-full max-w-md">
                                 <label className="text-gray-700 font-semibold">Período</label>
                                 <select
@@ -185,23 +175,16 @@ export default function SignupPage() {
                 case 'gestor':
                     return (
                         <>
-                            <div className="flex flex-col items-center gap-2 w-full max-w-md">
-                                <label className="text-gray-700 font-semibold">Nome da Universidade</label>
-                                <input
-                                    type="text"
-                                    value={formData.nomeUniversidade || ''}
-                                    onChange={(e) => handleInputChange('nomeUniversidade', e.target.value)}
-                                    placeholder="Nome da universidade"
-                                    className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.nomeUniversidade ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-purple-500'
-                                        }`}
-                                />
-                                {errors.nomeUniversidade && (
-                                    <p className="text-red-500 text-sm flex items-center gap-1">
-                                        <AlertCircle className="h-4 w-4" />
-                                        {errors.nomeUniversidade}
-                                    </p>
-                                )}
-                            </div>
+                            <AutocompleteInput
+                                value={formData.nomeUniversidade || ''}
+                                onChange={(value) => handleInputChange('nomeUniversidade', value)}
+                                onSearch={universitiesHook.searchUniversities}
+                                suggestions={universitiesHook.universities}
+                                placeholder="Digite o nome da universidade"
+                                label="Nome da Universidade"
+                                error={errors.nomeUniversidade}
+                                fieldType="university"
+                            />
                             <div className="flex flex-col items-center gap-2 w-full max-w-md">
                                 <label className="text-gray-700 font-semibold">Departamento</label>
                                 <input
@@ -603,21 +586,37 @@ export default function SignupPage() {
                                     {/* CEP */}
                                     <div className="flex flex-col items-center gap-2 w-full max-w-md">
                                         <label className="text-gray-700 font-semibold">CEP</label>
-                                        <input
-                                            type="text"
-                                            value={formData.cep}
-                                            onChange={(e) => handleInputChange('cep', e.target.value)}
-                                            placeholder="00000-000"
-                                            maxLength={9}
-                                            className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cep ? 'border-red-500 focus:ring-red-500' : `border-gray-300 focus:ring-${formData.userType === 'aluno' ? 'blue' : formData.userType === 'recrutador' ? 'green' : 'purple'}-500`
-                                                }`}
-                                        />
+                                        <div className="relative w-full">
+                                            <input
+                                                type="text"
+                                                value={formData.cep}
+                                                onChange={(e) => handleInputChange('cep', e.target.value)}
+                                                placeholder="00000-000"
+                                                maxLength={9}
+                                                className={`w-full text-black px-4 py-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cep ? 'border-red-500 focus:ring-red-500' : `border-gray-300 focus:ring-${formData.userType === 'aluno' ? 'blue' : formData.userType === 'recrutador' ? 'green' : 'purple'}-500`
+                                                    }`}
+                                            />
+                                            {cepHook.loading && (
+                                                <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {cepHook.error && (
+                                            <p className="text-red-500 text-sm flex items-center gap-1">
+                                                <AlertCircle className="h-4 w-4" />
+                                                {cepHook.error}
+                                            </p>
+                                        )}
                                         {errors.cep && (
                                             <p className="text-red-500 text-sm flex items-center gap-1">
                                                 <AlertCircle className="h-4 w-4" />
                                                 {errors.cep}
                                             </p>
                                         )}
+                                        <p className="text-xs text-gray-500 text-center">
+                                            Digite o CEP para auto-preencher cidade e estado automaticamente
+                                        </p>
                                     </div>
 
                                     <div className="flex gap-4">

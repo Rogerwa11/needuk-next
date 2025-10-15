@@ -150,10 +150,71 @@ export const validationUtils = {
         return `${cleaned.slice(0, 3)}.${cleaned.slice(3, 6)}.${cleaned.slice(6, 9)}-${cleaned.slice(9)}`;
     },
 
-    // Validar telefone
+    // Validar telefone brasileiro
     isValidPhone: (phone: string): boolean => {
         const cleaned = phone.replace(/\D/g, '');
-        return cleaned.length === 10 || cleaned.length === 11; // Fixo ou celular
+
+        // Deve ter 10 ou 11 dígitos
+        if (cleaned.length !== 10 && cleaned.length !== 11) {
+            return false;
+        }
+
+        // Lista de DDDs brasileiros válidos
+        const validDDD = [
+            '11', '12', '13', '14', '15', '16', '17', '18', '19', // SP
+            '21', '22', '24', // RJ/ES
+            '27', '28', // ES
+            '31', '32', '33', '34', '35', '37', '38', // MG
+            '41', '42', '43', '44', '45', '46', // PR
+            '47', '48', '49', // SC
+            '51', '53', '54', '55', // RS
+            '61', // DF
+            '62', '64', // GO
+            '63', // TO
+            '65', '66', // MT
+            '67', // MS
+            '68', // AC
+            '69', // RO
+            '71', '73', '74', '75', '77', // BA
+            '79', // SE
+            '81', '87', // PE
+            '82', // AL
+            '83', // PB
+            '84', // RN
+            '85', '88', // CE
+            '86', '89', // PI
+            '91', '93', '94', // PA
+            '92', '97', // AM
+            '95', // RR
+            '96', // AP
+            '98', '99' // MA
+        ];
+
+        const ddd = cleaned.substring(0, 2);
+        if (!validDDD.includes(ddd)) {
+            return false;
+        }
+
+        // Para telefones de 11 dígitos (celular), deve começar com 9
+        if (cleaned.length === 11) {
+            if (cleaned.charAt(2) !== '9') {
+                return false;
+            }
+        }
+
+        // Para telefones de 10 dígitos (fixo), não deve começar com 9 no nono dígito
+        if (cleaned.length === 10) {
+            if (cleaned.charAt(2) === '9') {
+                return false;
+            }
+        }
+
+        // Verificar se não é uma sequência repetida (ex: 11111111111)
+        if (/^(\d)\1+$/.test(cleaned)) {
+            return false;
+        }
+
+        return true;
     },
 
     // Formatar telefone

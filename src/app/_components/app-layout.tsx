@@ -62,15 +62,15 @@ const navigationItems: NavItem[] = [
         allowedUserTypes: ['aluno', 'gestor']
     },
     {
-        name: 'Currículo/Relatório',
-        href: '/curriculo',
-        icon: FileText,
+        name: 'Vagas',
+        href: '/vacancies',
+        icon: Briefcase,
         allowedUserTypes: ['aluno', 'recrutador', 'gestor']
     },
     {
-        name: 'Vagas',
-        href: '/vagas',
-        icon: Briefcase,
+        name: 'Currículo/Relatório',
+        href: '/curriculo',
+        icon: FileText,
         allowedUserTypes: ['aluno', 'recrutador', 'gestor']
     },
     {
