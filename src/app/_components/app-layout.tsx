@@ -19,6 +19,7 @@ import {
     CheckCircle,
     XCircle
 } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
 import { Logo } from '@/app/_components/logo';
 import { ButtonSignout } from '@/app/dashboard/_components/button-signout';
 import Footer from '@/app/_components/footer';
@@ -242,8 +243,16 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
                                 {/* Dropdown de Notificações - compacto */}
                                 {notificationsOpen && (
                                     <div className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50 max-h-80 overflow-y-auto">
-                                        <div className="px-3 py-2 border-b border-gray-200">
+                                        <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
                                             <h3 className="text-sm font-semibold text-gray-900">Notificações</h3>
+                                            <button
+                                                onClick={fetchNotifications}
+                                                disabled={fetchNotificationsApi.loading}
+                                                className="p-1 rounded text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50"
+                                                title="Atualizar"
+                                            >
+                                                <RefreshCw className={`w-4 h-4 ${fetchNotificationsApi.loading ? 'animate-spin' : ''}`} />
+                                            </button>
                                         </div>
 
                                         {(!notifications || notifications.length === 0) ? (
