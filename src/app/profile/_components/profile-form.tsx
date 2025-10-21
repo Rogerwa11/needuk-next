@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, useApi } from '@/hooks/custom';
+import { useCep } from '@/hooks/custom/useCep';
+import { useCourses, useUniversities } from '@/hooks/custom/useAutocomplete';
 import { commonSchemas, validationUtils } from '@/utils/validation-helpers';
-import { showSuccess, showError } from '@/components/ui';
+import { showSuccess, showError, AutocompleteInput } from '@/components/ui';
+import { UF_OPTIONS } from '@/constants/ufs';
 import { cardStyles } from '@/constants/styles';
 import {
     User,
@@ -95,10 +98,16 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
+    // Hooks auxiliares: CEP e Autocomplete
+    const cep = useCep();
+    const courses = useCourses();
+    const universities = useUniversities();
+
     // Hook de formulário com validação
     const form = useForm<ProfileData>({
         initialValues: {
             name: user.name || '',
+            email: user.email,
             telefone: user.telefone || '',
             endereco: user.endereco || '',
             cidade: user.cidade || '',
@@ -200,7 +209,14 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                     ...values,
                     image: imageUrl || undefined
                 }),
-            }).then(res => res.json())
+            }).then(async (res) => {
+                const payload = await res.json().catch(() => null);
+                if (!res.ok) {
+                    const message = (payload && (payload.error || payload.message)) || 'Erro ao atualizar perfil';
+                    throw new Error(message);
+                }
+                return payload;
+            })
         );
 
         // Limpar estado da imagem após sucesso
@@ -211,13 +227,28 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     // Wrapper para compatibilidade
     const handleFormSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (await form.validate()) {
-            await handleSubmit(form.values);
+        const isValid = form.validate();
+        if (!isValid) {
+            showError('Corrija os campos destacados');
+            return;
         }
+        await handleSubmit(form.values);
     };
 
     const handleInputChange = (field: string, value: string) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        let newValue = value;
+
+        if (field === 'telefone') {
+            const digits = value.replace(/\D/g, '').slice(0, 11);
+            newValue = validationUtils.formatPhone(digits);
+        }
+        if (field === 'estado') {
+            newValue = value.toUpperCase();
+        }
+
+        setFormData(prev => ({ ...prev, [field]: newValue }));
+        // Sincronizar também com o useForm para validação/envio corretos
+        form.setFieldValue(field as any, newValue);
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
@@ -263,35 +294,40 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">Curso</label>
-                                <input
-                                    type="text"
-                                    value={formData.curso}
-                                    onChange={(e) => handleInputChange('curso', e.target.value)}
+                                <AutocompleteInput
+                                    value={formData.curso || ''}
+                                    onChange={(v) => handleInputChange('curso', v)}
+                                    onSearch={courses.searchCourses}
+                                    suggestions={courses.courses}
                                     placeholder="Ex: Engenharia de Software"
-                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    fieldType="course"
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">Universidade</label>
-                                <input
-                                    type="text"
-                                    value={formData.universidade}
-                                    onChange={(e) => handleInputChange('universidade', e.target.value)}
+                                <AutocompleteInput
+                                    value={formData.universidade || ''}
+                                    onChange={(v) => handleInputChange('universidade', v)}
+                                    onSearch={universities.searchUniversities}
+                                    suggestions={universities.universities}
                                     placeholder="Ex: Universidade Federal"
-                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                    fieldType="university"
                                 />
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">Período/Semestre</label>
-                                <input
-                                    type="text"
-                                    value={formData.periodo}
+                                <select
+                                    value={formData.periodo || ''}
                                     onChange={(e) => handleInputChange('periodo', e.target.value)}
-                                    placeholder="Ex: 5º período"
                                     className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
-                                />
+                                >
+                                    <option value="">Selecione o período</option>
+                                    {Array.from({ length: 12 }, (_, i) => `${i + 1}`).map((p) => (
+                                        <option key={p} value={p}>{p}º Período</option>
+                                    ))}
+                                </select>
                             </div>
                         </div>
                     </div>
@@ -517,15 +553,15 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                         value={formData.name}
                                         onChange={(e) => handleInputChange('name', e.target.value)}
                                         placeholder="Seu nome completo"
-                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.name
+                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.name
                                             ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-purple-500'
                                             }`}
                                     />
-                                    {errors.name && (
+                                    {form.errors.name && (
                                         <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                             <AlertCircle className="h-4 w-4" />
-                                            {errors.name}
+                                            {form.errors.name}
                                         </p>
                                     )}
                                 </div>
@@ -554,15 +590,16 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                         value={formData.telefone}
                                         onChange={(e) => handleInputChange('telefone', e.target.value)}
                                         placeholder="(11) 99999-9999"
-                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.telefone
+                                        maxLength={15}
+                                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.telefone
                                             ? 'border-red-500 focus:ring-red-500'
                                             : 'border-gray-300 focus:ring-purple-500'
                                             }`}
                                     />
-                                    {errors.telefone && (
+                                    {form.errors.telefone && (
                                         <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                             <AlertCircle className="h-4 w-4" />
-                                            {errors.telefone}
+                                            {form.errors.telefone}
                                         </p>
                                     )}
                                 </div>
@@ -619,10 +656,10 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     : 'border-gray-300 focus:ring-purple-500'
                                     }`}
                             />
-                            {errors.endereco && (
+                            {form.errors.endereco && (
                                 <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                     <AlertCircle className="h-4 w-4" />
-                                    {errors.endereco}
+                                    {form.errors.endereco}
                                 </p>
                             )}
                         </div>
@@ -635,56 +672,82 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     value={formData.cidade}
                                     onChange={(e) => handleInputChange('cidade', e.target.value)}
                                     placeholder="Sua cidade"
-                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cidade
+                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.cidade
                                         ? 'border-red-500 focus:ring-red-500'
                                         : 'border-gray-300 focus:ring-purple-500'
                                         }`}
                                 />
-                                {errors.cidade && (
+                                {form.errors.cidade && (
                                     <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                         <AlertCircle className="h-4 w-4" />
-                                        {errors.cidade}
+                                        {form.errors.cidade}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">Estado</label>
-                                <input
-                                    type="text"
+                                <select
                                     value={formData.estado}
                                     onChange={(e) => handleInputChange('estado', e.target.value)}
-                                    placeholder="UF"
-                                    maxLength={2}
-                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.estado
+                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duração-300 ${form.errors.estado
                                         ? 'border-red-500 focus:ring-red-500'
                                         : 'border-gray-300 focus:ring-purple-500'
                                         }`}
-                                />
-                                {errors.estado && (
+                                >
+                                    <option value="">Selecione o estado</option>
+                                    {UF_OPTIONS.map((uf) => (
+                                        <option key={uf} value={uf}>{uf}</option>
+                                    ))}
+                                </select>
+                                {form.errors.estado && (
                                     <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                         <AlertCircle className="h-4 w-4" />
-                                        {errors.estado}
+                                        {form.errors.estado}
                                     </p>
                                 )}
                             </div>
 
                             <div className="space-y-2">
                                 <label className="text-gray-700 font-semibold block">CEP</label>
-                                <input
-                                    type="text"
-                                    value={formData.cep}
-                                    onChange={(e) => handleInputChange('cep', e.target.value)}
-                                    placeholder="00000-000"
-                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.cep
-                                        ? 'border-red-500 focus:ring-red-500'
-                                        : 'border-gray-300 focus:ring-purple-500'
-                                        }`}
-                                />
-                                {errors.cep && (
+                                <div className="relative w-full">
+                                    <input
+                                        type="text"
+                                        value={formData.cep}
+                                        onChange={(e) => handleInputChange('cep', e.target.value)}
+                                        onBlur={async () => {
+                                            const cepDigits = (form.values.cep || '').replace(/\D/g, '');
+                                            if (cepDigits.length === 8) {
+                                                const data = await cep.searchCep(cepDigits);
+                                                if (data) {
+                                                    form.setFieldValue('cidade', data.localidade);
+                                                    form.setFieldValue('estado', data.uf);
+                                                    setFormData(prev => ({ ...prev, cidade: data.localidade, estado: data.uf }));
+                                                }
+                                            }
+                                        }}
+                                        placeholder="00000-000"
+                                        className={`text-black w-full px-4 py-3 pr-10 border rounded-lg focus:outline-none focus:ring-2 transition-all duração-300 ${form.errors.cep
+                                            ? 'border-red-500 focus:ring-red-500'
+                                            : 'border-gray-300 focus:ring-purple-500'
+                                            }`}
+                                    />
+                                    {cep.loading && (
+                                        <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
+                                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-600"></div>
+                                        </div>
+                                    )}
+                                </div>
+                                {cep.error && (
                                     <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
                                         <AlertCircle className="h-4 w-4" />
-                                        {errors.cep}
+                                        {cep.error}
+                                    </p>
+                                )}
+                                {form.errors.cep && (
+                                    <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                                        <AlertCircle className="h-4 w-4" />
+                                        {form.errors.cep}
                                     </p>
                                 )}
                             </div>

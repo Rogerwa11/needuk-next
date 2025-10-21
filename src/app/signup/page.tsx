@@ -7,6 +7,7 @@ import { useAuthRedirect } from '@/hooks/useAuth';
 import { AuthLoadingScreen } from '@/app/_components/AuthLoadingScreen';
 import { Logo } from '@/app/_components/logo';
 import { AutocompleteInput } from '@/components/ui';
+import { UF_OPTIONS } from '@/constants/ufs';
 
 export default function SignupPage() {
 
@@ -565,15 +566,17 @@ export default function SignupPage() {
                                         </div>
                                         <div className="flex flex-col items-center gap-2 flex-1">
                                             <label className="text-gray-700 font-semibold">Estado</label>
-                                            <input
-                                                type="text"
+                                            <select
                                                 value={formData.estado}
                                                 onChange={(e) => handleInputChange('estado', e.target.value)}
-                                                placeholder="UF"
-                                                maxLength={2}
                                                 className={`w-full text-black px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${errors.estado ? 'border-red-500 focus:ring-red-500' : `border-gray-300 focus:ring-${formData.userType === 'aluno' ? 'blue' : formData.userType === 'recrutador' ? 'green' : 'purple'}-500`
                                                     }`}
-                                            />
+                                            >
+                                                <option value="">Selecione o estado</option>
+                                                {UF_OPTIONS.map((uf) => (
+                                                    <option key={uf} value={uf}>{uf}</option>
+                                                ))}
+                                            </select>
                                             {errors.estado && (
                                                 <p className="text-red-500 text-xs flex items-center gap-1">
                                                     <AlertCircle className="h-3 w-3" />

@@ -1,4 +1,6 @@
-import React, { useId } from 'react';
+"use client";
+
+import React, { useId, useState } from 'react';
 
 interface AutocompleteInputProps {
   value: string;
@@ -29,9 +31,11 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
 }) => {
   const inputId = useId();
   const datalistId = useId();
+  const [touched, setTouched] = useState(false);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value;
+    if (!touched) setTouched(true);
     onChange(newValue);
     onSearch?.(newValue);
   };
@@ -82,12 +86,12 @@ export const AutocompleteInput: React.FC<AutocompleteInputProps> = ({
         </p>
       )}
 
-      {suggestions.length > 0 && value && !suggestions.some(s => s.toLowerCase() === value.toLowerCase()) && (
+      {touched && suggestions.length > 0 && value && !suggestions.some(s => s.toLowerCase() === value.toLowerCase()) && (
         <p className="text-xs text-amber-600 text-center">
           ⚠️ Selecione {fieldType === 'course' ? 'um curso' : fieldType === 'university' ? 'uma universidade' : 'uma opção'} da lista para continuar
         </p>
       )}
-      {suggestions.length === 0 && value && value.length >= 2 && fieldType !== 'university' && (
+      {touched && suggestions.length === 0 && value && value.length >= 2 && fieldType !== 'university' && (
         <p className="text-xs text-red-500 text-center">
           ❌ {fieldType === 'course' ? 'Nenhum curso' : 'Nenhuma opção'} encontrada. Verifique a digitação
         </p>
