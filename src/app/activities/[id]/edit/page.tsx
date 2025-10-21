@@ -215,15 +215,22 @@ export default function EditActivityPage() {
                 }),
             });
 
+            const data = await response.json().catch(() => null);
             if (response.ok) {
                 showSuccess(`Convites enviados com sucesso para ${normalizedEmails.length} participante(s)!`);
                 setParticipantEmails(['']);
                 setShowParticipantManagement(false);
-                // Recarregar atividade para atualizar lista de participantes
                 await fetchActivity();
             } else {
-                const data = await response.json();
-                showError(data.message || data.error || 'Erro ao enviar convites');
+                const title = data?.error;
+                const content = data?.message;
+                const details = Array.isArray(data?.details)
+                    ? data.details.map((d: any) => d?.message || String(d)).join(', ')
+                    : '';
+                const msg = title && content
+                    ? `${title}: ${content}`
+                    : (title || content || details || 'Erro ao enviar convites');
+                showError(msg);
             }
         } catch (error) {
             console.error('Erro ao convidar participantes:', error);

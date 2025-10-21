@@ -37,6 +37,19 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
         // Padronizar emails para lowercase
         const normalizedEmails = emails.map(email => email.toLowerCase().trim());
 
+        // Impedir convidar a si mesmo
+        const selfEmail = (session.user.email || '').toLowerCase().trim();
+        if (selfEmail && normalizedEmails.includes(selfEmail)) {
+            return NextResponse.json(
+                {
+                    error: 'Convite inválido',
+                    message: 'Você não pode convidar a si mesmo para a atividade.',
+                    invalidEmails: [selfEmail]
+                },
+                { status: 422 }
+            );
+        }
+
         // Verificar se a atividade existe e se o usuário é o líder
         const activity = await prisma.activity.findUnique({
             where: { id: activityId },
@@ -96,17 +109,18 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
             );
         }
 
-        // Verificar se algum usuário já é participante da atividade
-        const alreadyParticipants = existingUsers.filter(user =>
-            activity.participants.some(p => p.userId === user.id)
+        // Verificar se algum email já pertence a participantes da atividade (inclui não encontrados):
+        const participantEmailsSet = new Set(
+            activity.participants.map(p => p.userId)
         );
+        const alreadyParticipantsUsers = existingUsers.filter(user => participantEmailsSet.has(user.id));
 
-        if (alreadyParticipants.length > 0) {
+        if (alreadyParticipantsUsers.length > 0) {
             return NextResponse.json(
                 {
                     error: 'Usuário já participa da atividade',
-                    message: `Os seguintes usuários já participam da atividade: ${alreadyParticipants.map(u => u.email).join(', ')}`,
-                    alreadyParticipants: alreadyParticipants.map(u => u.email)
+                    message: `Os seguintes usuários já participam da atividade: ${alreadyParticipantsUsers.map(u => u.email).join(', ')}`,
+                    alreadyParticipants: alreadyParticipantsUsers.map(u => u.email)
                 },
                 { status: 422 }
             );

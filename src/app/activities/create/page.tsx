@@ -16,7 +16,8 @@ import {
 import { Input, Button, FormError } from '@/components/ui';
 import { cardStyles } from '@/constants/styles';
 import { useApi, useForm } from '@/hooks/custom';
-import { commonSchemas } from '@/utils/validation-helpers';
+import { commonSchemas, validationUtils } from '@/utils/validation-helpers';
+import { z } from 'zod';
 import { showSuccess, showError } from '@/components/ui';
 
 interface Link {
@@ -37,6 +38,20 @@ interface FormData {
 export default function CreateActivityPage() {
     const router = useRouter();
 
+    // Schema local para criação (baseado no commonSchemas.activity)
+    const activityCreateSchema = z.object({
+        title: z.string().min(1, 'Título é obrigatório').max(200, 'Título muito longo'),
+        description: z.string().optional(),
+        startDate: z.string().min(1, 'Data de início é obrigatória'),
+        endDate: z.string().optional(),
+        participantEmails: z.array(z.string().email('Email inválido')).max(50, 'Máximo de 50 emails').optional().default([]),
+        links: z.array(z.object({
+            id: z.string(),
+            title: z.string().min(1, 'Título do link é obrigatório'),
+            url: z.string().url('URL inválida')
+        })).optional()
+    });
+
     // Hook de formulário com validação
     const form = useForm<FormData>({
         initialValues: {
@@ -47,7 +62,7 @@ export default function CreateActivityPage() {
             participantEmails: [],
             links: []
         } as FormData,
-        // validationSchema: commonSchemas.activity, // Temporariamente removido por incompatibilidade de tipos
+        validationSchema: activityCreateSchema as any,
         onSuccess: (data) => {
             showSuccess('Atividade criada com sucesso!');
             router.push('/activities');
@@ -73,15 +88,18 @@ export default function CreateActivityPage() {
     };
 
     const updateParticipantEmail = (index: number, email: string) => {
+        // normalizar para lowercase e trim
+        const normalized = validationUtils.normalizeEmail(email);
+
         // Validar email se não estiver vazio
-        if (email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        if (normalized && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
             setErrors(prev => ({ ...prev, [`participant_${index}`]: 'Email inválido' }));
         } else {
             setErrors(prev => ({ ...prev, [`participant_${index}`]: '' }));
         }
 
         const updatedEmails = form.values.participantEmails.map((currentEmail, i) =>
-            i === index ? email : currentEmail
+            i === index ? normalized : currentEmail
         );
         form.setFieldValue('participantEmails', updatedEmails);
     };
@@ -121,13 +139,38 @@ export default function CreateActivityPage() {
     // Enviar formulário
     const handleSubmit = async (values: FormData) => {
         // Filtrar emails vazios e links incompletos
+        const rawEmails = (values.participantEmails || []).filter(email => email.trim());
+        const normalizedEmails = Array.from(new Set(rawEmails.map(e => validationUtils.normalizeEmail(e))));
+
         const cleanData = {
             ...values,
-            participantEmails: values.participantEmails.filter(email => email.trim()),
+            participantEmails: normalizedEmails,
             links: (values.links || []).filter(link =>
                 link.title.trim() && link.url.trim()
             )
         };
+
+        // se houver emails, checar existência
+        if (cleanData.participantEmails.length > 0) {
+            try {
+                const existsRes = await fetch('/api/users/exists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ emails: cleanData.participantEmails })
+                });
+                const existsPayload = await existsRes.json();
+                if (!existsRes.ok) {
+                    throw new Error(existsPayload?.error || 'Erro ao validar emails');
+                }
+                if (existsPayload?.notFound?.length) {
+                    showError(`Os seguintes emails não foram encontrados: ${existsPayload.notFound.join(', ')}`);
+                    return;
+                }
+            } catch (err) {
+                showError(err instanceof Error ? err.message : 'Erro ao validar emails');
+                return;
+            }
+        }
 
         createActivityApi.execute(() =>
             fetch('/api/activities', {
@@ -136,7 +179,21 @@ export default function CreateActivityPage() {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify(cleanData),
-            }).then(res => res.json())
+            }).then(async (res) => {
+                const payload = await res.json().catch(() => null);
+                if (!res.ok) {
+                    const title = payload?.error;
+                    const content = payload?.message;
+                    const details = Array.isArray(payload?.details)
+                        ? payload.details.map((d: any) => d?.message || String(d)).join(', ')
+                        : '';
+                    const message = title && content
+                        ? `${title}: ${content}`
+                        : (title || content || details || 'Erro ao criar atividade');
+                    throw new Error(message);
+                }
+                return payload;
+            })
         );
     };
 

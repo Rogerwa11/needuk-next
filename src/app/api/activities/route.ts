@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
 
 export async function GET(request: NextRequest) {
     try {
@@ -169,8 +170,34 @@ export async function POST(request: NextRequest) {
             links = []
         } = body;
 
-        // Padronizar emails dos participantes para lowercase
-        const normalizedParticipantEmails = participantEmails.map((email: string) => email.toLowerCase().trim());
+        // Validar e normalizar emails dos participantes
+        const emailSchema = z.string().email();
+        const normalizedParticipantEmails = Array.from(new Set(
+            (participantEmails as string[])
+                .filter((e) => typeof e === 'string')
+                .map((e) => e.toLowerCase().trim())
+                .filter(Boolean)
+        ));
+
+        const invalidEmails = normalizedParticipantEmails.filter((e) => !emailSchema.safeParse(e).success);
+        if (invalidEmails.length > 0) {
+            return NextResponse.json(
+                { error: 'Emails inválidos', details: invalidEmails },
+                { status: 400 }
+            );
+        }
+
+        // Impedir que o criador convide a si mesmo como participante na criação
+        const creatorEmail = (session.user.email || '').toLowerCase().trim();
+        if (creatorEmail && normalizedParticipantEmails.includes(creatorEmail)) {
+            return NextResponse.json(
+                {
+                    error: 'Convite inválido',
+                    message: 'Você não pode se adicionar como participante; você já será o líder da atividade.'
+                },
+                { status: 422 }
+            );
+        }
 
         // Validações básicas
         if (!title || !startDate) {
