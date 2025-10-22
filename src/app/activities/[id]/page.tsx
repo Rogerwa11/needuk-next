@@ -779,7 +779,7 @@ export default function ActivityDetailPage() {
                                 {activity.endDate && (
                                     <div>
                                         <p className="text-sm text-gray-600">Data de Fim</p>
-                                        <p className="font-medium">{formatDate(activity.endDate)}</p>
+                                        <p className="text-black font-medium">{formatDate(activity.endDate)}</p>
                                     </div>
                                 )}
                             </div>

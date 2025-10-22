@@ -13,32 +13,13 @@ export const ButtonSignout = ({ variant = 'default' }: ButtonSignoutProps): Reac
 
     async function handleSignout() {
         try {
-            // Primeiro fazer logout no servidor para limpar sessão completamente
-            const response = await fetch('/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-            });
-
-            if (response.ok) {
-                // Depois fazer logout no cliente
-                await authClient.signOut();
-                // Forçar refresh completo da página para garantir que o layout seja re-renderizado
-                window.location.href = '/';
-            } else {
-                console.error('Erro no logout do servidor');
-                // Fallback: tentar logout apenas no cliente
-                await authClient.signOut();
-                window.location.href = '/';
-            }
-        } catch (error) {
-            console.error('Erro no logout:', error);
-            // Fallback: tentar logout apenas no cliente
-            await authClient.signOut();
-            window.location.href = '/';
+          await authClient.signOut(); // POST /api/auth/sign-out
+        } catch (_) {
+          // se já não houver sessão, ignore
+        } finally {
+          window.location.href = '/';
         }
-    }
+      }
 
     if (variant === 'dropdown') {
         return (

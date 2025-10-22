@@ -34,6 +34,31 @@ export const userProfileSelect = {
     updatedAt: true,
 } as const;
 
+// Select público para o Banco de Talentos (NÃO expõe CPF)
+export const publicTalentSelect = {
+  id: true,
+  name: true,
+  email: true,
+  telefone: true,
+  image: true,
+  userType: true,
+  cidade: true,
+  estado: true,
+  cnpj: true,
+  curso: true,
+  universidade: true,
+  periodo: true,
+  nomeUniversidade: true,
+  departamento: true,
+  cargoGestor: true,
+  nomeEmpresa: true,
+  cargo: true,
+  setor: true,
+  goldMedals: true,
+  silverMedals: true,
+  bronzeMedals: true,
+} as const;
+
 export const activityBasicSelect = {
     id: true,
     title: true,

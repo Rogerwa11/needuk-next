@@ -63,6 +63,12 @@ const navigationItems: NavItem[] = [
         allowedUserTypes: ['aluno', 'gestor']
     },
     {
+        name: 'Banco de Talentos',
+        href: '/talents',
+        icon: Users,
+        allowedUserTypes: ['recrutador', 'gestor', 'aluno']
+    },
+    {
         name: 'Vagas',
         href: '/vacancies',
         icon: Briefcase,
@@ -73,12 +79,6 @@ const navigationItems: NavItem[] = [
         href: '/curriculo',
         icon: FileText,
         allowedUserTypes: ['aluno', 'recrutador', 'gestor']
-    },
-    {
-        name: 'Banco de Talentos',
-        href: '/talentos',
-        icon: Users,
-        allowedUserTypes: ['recrutador', 'gestor']
     }
 ];
 
