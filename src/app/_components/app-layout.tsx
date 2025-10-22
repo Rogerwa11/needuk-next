@@ -430,8 +430,8 @@ const CompactSidebarContent = ({
         <div className="flex flex-col h-full">
             {/* Header da sidebar - ultra compacto */}
             <div className="flex items-center justify-between p-2 border-b border-gray-200">
-                <div className="scale-50">
-                    <Logo />
+                <div className="h-16 w-full flex items-center justify-center">
+                    <Logo compact={true}/>
                 </div>
                 {onClose && (
                     <button
@@ -459,8 +459,8 @@ const CompactSidebarContent = ({
                                 : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
                                 }`}
                         >
-                            <Icon className={`w-3.5 h-3.5 mr-1.5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
-                            <span className="text-[10px] leading-tight">{item.name}</span>
+                            <Icon className={`w-4 h-4 mr-1.5 ${isActive ? 'text-white' : 'text-gray-500'}`} />
+                            <span className="text-[12px] leading-tight">{item.name}</span>
                         </Link>
                     );
                 })}
