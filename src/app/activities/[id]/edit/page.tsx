@@ -20,6 +20,7 @@ import {
 import { Input, showSuccess, showError, showWarning, confirmDanger } from '@/components/ui';
 import { useApi, useFormValidation } from '@/hooks/custom';
 import { commonSchemas } from '@/utils/validation-helpers';
+import { z } from 'zod';
 
 interface Link {
     id: string;
@@ -87,6 +88,20 @@ export default function EditActivityPage() {
         links: [] as Link[]
     });
 
+
+
+    const editActivitySchema = z.object({
+        title: z.string().min(1, 'Título é obrigatório').max(200),
+        description: z.string().max(1000).optional(),
+        startDate: z.string().min(1, 'Data de início é obrigatória'),
+        endDate: z.string().optional(),
+        }).refine((data) => {
+        if (!data.endDate) return true;
+        const s = new Date(data.startDate);
+        const e = new Date(data.endDate);
+        return !isNaN(s.getTime()) && !isNaN(e.getTime()) && e > s;
+    }, { message: 'Data de fim deve ser posterior à data de início', path: ['endDate'] });
+
     // API hooks
     const fetchActivityApi = useApi({
         onSuccess: (data) => {
@@ -141,7 +156,7 @@ export default function EditActivityPage() {
 
     // Hook de validação
     const { validate } = useFormValidation({
-        schema: commonSchemas.activity,
+        schema: editActivitySchema,
         onError: setErrors
     });
 
@@ -332,13 +347,23 @@ export default function EditActivityPage() {
 
         saveActivityApi.execute(() =>
             fetch(`/api/activities/${activityId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(updateData),
-            }).then(res => res.json())
-        );
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(updateData),
+            }).then(async (res) => {
+              const payload = await res.json().catch(() => null);
+              if (!res.ok) {
+                const title = payload?.error;
+                const content = payload?.message;
+                const details = Array.isArray(payload?.details)
+                  ? payload.details.map((d: any) => d?.message || String(d)).join(', ')
+                  : '';
+                const msg = title && content ? `${title}: ${content}` : (title || content || details || 'Erro ao salvar atividade');
+                throw new Error(msg);
+              }
+              return payload;
+            })
+          );
     };
 
     if (fetchActivityApi.loading || fetchCurrentUserApi.loading) {
