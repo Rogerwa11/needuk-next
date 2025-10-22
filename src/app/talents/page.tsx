@@ -31,10 +31,8 @@ export default function Talents() {
   const [userType, setUserType] = useState<'aluno' | 'gestor' | ''>('')
   const [curso, setCurso] = useState('')
   const [universidade, setUniversidade] = useState('')
-  const [nomeUniversidade, setNomeUniversidade] = useState('')
   const [departamento, setDepartamento] = useState('')
-  const [cargo, setCargo] = useState('')
-  const [setor, setSetor] = useState('')
+  const [cargoGestor, setCargoGestor] = useState('')
   const [cidade, setCidade] = useState('')
   const [estado, setEstado] = useState('')
   const [page, setPage] = useState(1)
@@ -48,10 +46,8 @@ export default function Talents() {
     if (userType) params.set('userType', userType)
     if (curso) params.set('curso', curso)
     if (universidade) params.set('universidade', universidade)
-    if (nomeUniversidade) params.set('nomeUniversidade', nomeUniversidade)
     if (departamento) params.set('departamento', departamento)
-    if (cargo) params.set('cargo', cargo)
-    if (setor) params.set('setor', setor)
+    if (cargoGestor) params.set('cargoGestor', cargoGestor)
     if (cidade) params.set('cidade', cidade)
     if (estado) params.set('estado', estado)
     params.set('page', String(page))
@@ -65,14 +61,14 @@ export default function Talents() {
   useEffect(() => {
     fetchTalents()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, userType, curso, universidade, nomeUniversidade, departamento, cargo, setor, cidade, estado, page])
+  }, [q, userType, curso, universidade, departamento, cargoGestor, cidade, estado, page])
 
   const items: TalentItem[] = listApi.data?.items || []
   const total: number = listApi.data?.total || 0
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   const resetFilters = () => {
-    setQ(''); setUserType(''); setCurso(''); setUniversidade(''); setNomeUniversidade(''); setDepartamento(''); setCargo(''); setSetor(''); setCidade(''); setEstado(''); setPage(1)
+    setQ(''); setUserType(''); setCurso(''); setUniversidade(''); setDepartamento(''); setCargoGestor(''); setCidade(''); setEstado(''); setPage(1)
   }
 
   return (
@@ -101,10 +97,8 @@ export default function Talents() {
             </select>
             <input value={curso} onChange={(e) => { setPage(1); setCurso(e.target.value) }} placeholder="Curso" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={universidade} onChange={(e) => { setPage(1); setUniversidade(e.target.value) }} placeholder="Universidade" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
-            <input value={nomeUniversidade} onChange={(e) => { setPage(1); setNomeUniversidade(e.target.value) }} placeholder="Nome da Universidade (Gestor)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={departamento} onChange={(e) => { setPage(1); setDepartamento(e.target.value) }} placeholder="Departamento (Gestor)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
-            <input value={cargo} onChange={(e) => { setPage(1); setCargo(e.target.value) }} placeholder="Cargo (Recrutador)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
-            <input value={setor} onChange={(e) => { setPage(1); setSetor(e.target.value) }} placeholder="Setor (Recrutador)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
+            <input value={cargoGestor} onChange={(e) => { setPage(1); setCargoGestor(e.target.value) }} placeholder="Cargo (Gestor)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={cidade} onChange={(e) => { setPage(1); setCidade(e.target.value) }} placeholder="Cidade" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={estado} onChange={(e) => { setPage(1); setEstado(e.target.value.toUpperCase().slice(0,2)) }} placeholder="UF" maxLength={2} className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <button onClick={resetFilters} className="text-black px-3 py-3 rounded-lg border text-sm hover:bg-gray-50">Limpar filtros</button>

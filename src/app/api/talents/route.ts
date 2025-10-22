@@ -15,8 +15,6 @@ export async function GET(request: NextRequest) {
     const departamento = searchParams.get('departamento') || '';
     const cargoGestor = searchParams.get('cargoGestor') || '';
     const nomeEmpresa = searchParams.get('nomeEmpresa') || '';
-    const cargo = searchParams.get('cargo') || '';
-    const setor = searchParams.get('setor') || '';
     const cidade = searchParams.get('cidade') || '';
     const estado = searchParams.get('estado') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
@@ -46,14 +44,20 @@ export async function GET(request: NextRequest) {
 
     if (userType) where.userType = userType;
     add('curso', curso);
-    add('universidade', universidade);
+    // Unificação: quando 'universidade' for usado, buscar em aluno.universidade OU gestor.nomeUniversidade
+    if (universidade || nomeUniversidade) {
+      const uni = universidade || nomeUniversidade;
+      where.AND = where.AND || [];
+      where.AND.push({ OR: [
+        { universidade: { contains: uni, mode: 'insensitive' } },
+        { nomeUniversidade: { contains: uni, mode: 'insensitive' } },
+      ]});
+    }
     add('periodo', periodo);
-    add('nomeUniversidade', nomeUniversidade);
+    // Campo específico separado não é mais necessário; mantido apenas se passado isoladamente (já coberto acima)
     add('departamento', departamento);
     add('cargoGestor', cargoGestor);
     add('nomeEmpresa', nomeEmpresa);
-    add('cargo', cargo);
-    add('setor', setor);
     add('cidade', cidade);
     add('estado', estado);
 
