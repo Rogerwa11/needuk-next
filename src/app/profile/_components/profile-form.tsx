@@ -26,10 +26,22 @@ import {
     Loader,
     Camera,
     Upload,
-    Award
+    Award,
+    ChevronDown,
+    ChevronUp,
 } from 'lucide-react';
 
 // Usar schema comum para perfil
+const experienceSchema = z.object({
+    company: z.string().min(1, 'Empresa é obrigatória').max(120),
+    role: z.string().min(1, 'Função é obrigatória').max(120),
+    details: z.string().max(1000, 'Máximo de 1000 caracteres').optional(),
+    startDate: z.string().min(1, 'Data inicial é obrigatória'),
+    endDate: z.string().optional(),
+}).refine(v => !v.endDate || new Date(v.endDate) > new Date(v.startDate), {
+    message: 'Data de fim deve ser posterior ao início', path: ['endDate']
+});
+
 const profileSchema = z.object({
     ...commonSchemas.profile.shape,
     // Campos específicos do perfil extendido
@@ -55,6 +67,9 @@ const profileSchema = z.object({
     nomeUniversidade: z.string().optional(),
     departamento: z.string().optional(),
     cargoGestor: z.string().optional(),
+    // Perfil estendido
+    aboutMe: z.string().max(1000, 'Máximo de 1000 caracteres').optional(),
+    experiences: z.array(experienceSchema).max(20, 'Máximo de 20 experiências').optional(),
 });
 
 type ProfileData = z.infer<typeof profileSchema> & { image?: string };
@@ -85,6 +100,8 @@ interface ProfileFormProps {
         nomeUniversidade?: string | null;
         departamento?: string | null;
         cargoGestor?: string | null;
+        aboutMe?: string | null;
+        experiences?: { id?: string; company: string; role: string; details?: string | null; startDate: string | Date; endDate?: string | Date | null }[];
     };
 }
 
@@ -97,6 +114,7 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     const [toastType, setToastType] = useState<'success' | 'error'>('success');
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [expanded, setExpanded] = useState<Record<number, boolean>>({});
 
     // Hooks auxiliares: CEP e Autocomplete
     const cep = useCep();
@@ -122,6 +140,14 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
             nomeUniversidade: user.nomeUniversidade || '',
             departamento: user.departamento || '',
             cargoGestor: user.cargoGestor || '',
+            aboutMe: user.aboutMe || '',
+            experiences: (user.experiences || []).map((e) => ({
+                company: e.company,
+                role: e.role,
+                details: (e as any).details || '',
+                startDate: typeof e.startDate === 'string' ? e.startDate : new Date(e.startDate).toISOString().slice(0,10),
+                endDate: e.endDate ? (typeof e.endDate === 'string' ? e.endDate : new Date(e.endDate).toISOString().slice(0,10)) : '',
+            })),
         },
         validationSchema: profileSchema,
         onSuccess: () => {
@@ -252,6 +278,35 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
         if (errors[field]) {
             setErrors(prev => ({ ...prev, [field]: '' }));
         }
+    };
+
+    const addExperience = () => {
+        const list = [...(form.values.experiences || [])];
+        if (list.length >= 20) {
+            showError('Máximo de 20 experiências');
+            return;
+        }
+        list.push({ company: '', role: '', startDate: '', endDate: '' });
+        form.setFieldValue('experiences' as any, list as any);
+        setFormData(prev => ({ ...prev, experiences: list as any }));
+    };
+
+    const removeExperience = (index: number) => {
+        const list = [...(form.values.experiences || [])];
+        list.splice(index, 1);
+        form.setFieldValue('experiences' as any, list as any);
+        setFormData(prev => ({ ...prev, experiences: list as any }));
+    };
+
+    const updateExperience = (index: number, field: 'company' | 'role' | 'startDate' | 'endDate' | 'details', value: string) => {
+        const list = [...(form.values.experiences || [])];
+        list[index] = { ...list[index], [field]: value } as any;
+        form.setFieldValue('experiences' as any, list as any);
+        setFormData(prev => ({ ...prev, experiences: list as any }));
+    };
+
+    const toggleExpanded = (index: number) => {
+        setExpanded(prev => ({ ...prev, [index]: !prev[index] }));
     };
 
     const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -754,6 +809,141 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                         </div>
                     </div>
                 </div>
+
+        {/* Sobre mim (aluno e gestor) */}
+        {(user.userType === 'aluno' || user.userType === 'gestor') && (
+            <div className={`${cardStyles.base} ${cardStyles.padding}`}>
+                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <FileText className="w-5 h-5" />
+                    Sobre mim
+                </h2>
+                <div className="space-y-2">
+                    <textarea
+                        value={form.values.aboutMe || ''}
+                        onChange={(e) => handleInputChange('aboutMe', e.target.value)}
+                        placeholder="Conte um pouco sobre você, objetivos, conquistas..."
+                        maxLength={1000}
+                        rows={5}
+                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.aboutMe
+                            ? 'border-red-500 focus:ring-red-500'
+                            : 'border-gray-300 focus:ring-purple-500'
+                            }`}
+                    />
+                    <div className="text-xs text-gray-500 text-right">{(form.values.aboutMe?.length || 0)}/1000</div>
+                    {form.errors.aboutMe && (
+                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                            <AlertCircle className="h-4 w-4" />
+                            {form.errors.aboutMe}
+                        </p>
+                    )}
+                </div>
+            </div>
+        )}
+
+        {/* Experiências (aluno e gestor) */}
+        {(user.userType === 'aluno' || user.userType === 'gestor') && (
+            <div className={`${cardStyles.base} ${cardStyles.padding}`}>
+                <div className="flex items-center justify-between mb-4">
+                    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                        <Briefcase className="w-5 h-5" />
+                        Experiências
+                    </h2>
+                    <button type="button" onClick={addExperience} className="text-white bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm">Adicionar</button>
+                </div>
+
+                {(form.values.experiences || []).length === 0 && (
+                    <p className="text-sm text-gray-600">Nenhuma experiência adicionada.</p>
+                )}
+
+                <div className="space-y-4">
+                    {(form.values.experiences || []).map((exp, idx) => (
+                        <div key={idx} className="p-4 border rounded-lg bg-white">
+                            {/* Header compacto sempre visível */}
+                            <div className="flex items-center justify-between">
+                                <div className="text-sm text-gray-900 font-medium">
+                                    {exp.role || 'Função não informada'} • {exp.company || 'Empresa não informada'}
+                                </div>
+                                <button type="button" onClick={() => toggleExpanded(idx)} className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                                    {expanded[idx] ? (
+                                        <>
+                                            Recolher <ChevronUp className="w-4 h-4" />
+                                        </>
+                                    ) : (
+                                        <>
+                                            Expandir <ChevronDown className="w-4 h-4" />
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {expanded[idx] && (
+                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div className="space-y-2">
+                                        <label className="text-gray-700 font-semibold block">Empresa</label>
+                                        <input
+                                            type="text"
+                                            value={exp.company}
+                                            onChange={(e) => updateExperience(idx, 'company', e.target.value)}
+                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.company` as any]
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-purple-500'
+                                                }`}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-700 font-semibold block">Função</label>
+                                        <input
+                                            type="text"
+                                            value={exp.role}
+                                            onChange={(e) => updateExperience(idx, 'role', e.target.value)}
+                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.role` as any]
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-purple-500'
+                                                }`}
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 space-y-2">
+                                        <label className="text-gray-700 font-semibold block">Detalhes</label>
+                                        <textarea
+                                            value={(exp as any).details || ''}
+                                            onChange={(e) => updateExperience(idx, 'details', e.target.value)}
+                                            placeholder="Descrição das atividades, tecnologias, conquistas..."
+                                            maxLength={1000}
+                                            rows={3}
+                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.details` as any]
+                                                ? 'border-red-500 focus:ring-red-500'
+                                                : 'border-gray-300 focus:ring-purple-500'
+                                                }`}
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-700 font-semibold block">Início</label>
+                                        <input
+                                            type="date"
+                                            value={exp.startDate as string}
+                                            onChange={(e) => updateExperience(idx, 'startDate', e.target.value)}
+                                            className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                        />
+                                    </div>
+                                    <div className="space-y-2">
+                                        <label className="text-gray-700 font-semibold block">Fim (opcional)</label>
+                                        <input
+                                            type="date"
+                                            value={(exp.endDate as string) || ''}
+                                            onChange={(e) => updateExperience(idx, 'endDate', e.target.value)}
+                                            className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                        />
+                                    </div>
+                                    <div className="md:col-span-2 mt-2 text-right">
+                                        <button type="button" onClick={() => removeExperience(idx)} className="text-sm text-red-600 hover:text-red-700">Remover</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
 
                 {/* Campos específicos por tipo de usuário */}
                 {renderSpecificFields()}

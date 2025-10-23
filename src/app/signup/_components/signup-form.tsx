@@ -563,7 +563,12 @@ export const useSignupForm = () => {
         // Se não for aluno, definir plano como 'free' e criar conta diretamente
         if (formData.userType !== 'aluno') {
             setFormData(prev => ({ ...prev, plan: 'free' }));
-            await createAccount('free');
+            try {
+                await createAccount('free');
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Erro ao criar conta.';
+                showToastMessage(message, 'error');
+            }
             return;
         }
 
@@ -586,13 +591,12 @@ export const useSignupForm = () => {
                 const cpfValidationResult = await cpfValidationResponse.json();
 
                 if (!cpfValidationResponse.ok) {
-                    throw new Error(cpfValidationResult.message || 'CPF já cadastrado no sistema');
+                    const message = cpfValidationResult?.error || cpfValidationResult?.message || 'CPF já cadastrado no sistema';
+                    throw new Error(message);
                 }
             } catch (error) {
-                if (error instanceof Error) {
-                    throw error;
-                }
-                throw new Error('Erro ao validar CPF');
+                const message = error instanceof Error ? error.message : 'Erro ao validar CPF';
+                throw new Error(message);
             }
         }
 
@@ -656,7 +660,8 @@ export const useSignupForm = () => {
             await createAccount(selectedPlan);
             setShowPlansPopup(false);
         } catch (error) {
-            showToastMessage('Erro ao criar conta. Tente novamente.', 'error');
+            const message = error instanceof Error ? error.message : 'Erro ao criar conta. Tente novamente.';
+            showToastMessage(message, 'error');
         } finally {
             setSelectedPlanLoading(null);
         }

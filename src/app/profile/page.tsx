@@ -43,6 +43,11 @@ export default async function ProfilePage() {
             nomeUniversidade: true,
             departamento: true,
             cargoGestor: true,
+            aboutMe: true,
+            experiences: {
+                select: { id: true, company: true, role: true, details: true, startDate: true, endDate: true },
+                orderBy: { startDate: 'desc' },
+            },
         }
     })
 

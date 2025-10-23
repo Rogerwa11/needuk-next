@@ -47,6 +47,10 @@ model User {
   departamento     String?
   cargoGestor      String?
 
+  // Perfil estendido
+  aboutMe     String?
+  experiences Experience[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @default(now()) @updatedAt
   sessions  Session[]
@@ -199,6 +203,24 @@ model ActivityLink {
   createdAt DateTime @default(now())
 
   @@map("activity_link")
+}
+
+// Experiências profissionais/academicas do usuário
+model Experience {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  company   String
+  role      String
+  details   String?
+  startDate DateTime
+  endDate   DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("experience")
 }
 
 // Sistema de Notificações

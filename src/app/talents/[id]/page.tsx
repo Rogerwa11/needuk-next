@@ -2,6 +2,7 @@ import { prisma } from '@/lib/prisma'
 import { publicTalentSelect, activityDetailSelect } from '@/lib/utils/prisma-selects'
 import Link from 'next/link'
 import { ActivityCard } from './_components/ActivityCard'
+import { ExperienceCard } from './_components/ExperienceCard'
 
 export default async function TalentDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolved = await params;
@@ -10,7 +11,7 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
     const date = value instanceof Date ? value : new Date(String(value))
     return isNaN(date.getTime()) ? '' : date.toLocaleString()
   }
-  const user = await prisma.user.findUnique({ where: { id: resolved.id }, select: publicTalentSelect })
+  const user = await prisma.user.findUnique({ where: { id: resolved.id }, select: (publicTalentSelect as any) }) as any
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
@@ -39,35 +40,37 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
         <div className="bg-white border rounded-lg p-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
-              {user.image ? <img src={user.image} alt={user.name || user.email} className="w-full h-full object-cover" /> : <span className="text-white text-lg">{(user.name || user.email)[0]?.toUpperCase()}</span>}
+              {user.image ? <img src={user.image as string} alt={(user.name || user.email) as string} className="w-full h-full object-cover" /> : <span className="text-white text-lg">{String(user.name || user.email)[0]?.toUpperCase()}</span>}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">{user.name || user.email}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{String(user.name || user.email)}</h1>
               <p className="text-sm text-gray-600 capitalize">{user.userType}</p>
-            </div>
+          </div>
+          
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
             <div><span className="text-gray-500">Email:</span> <span className="text-gray-800">{user.email}</span></div>
-            {user.telefone && (<div><span className="text-gray-500">Telefone:</span> <span className="text-gray-800">{user.telefone}</span></div>)}
+            {user.telefone && (<div><span className="text-gray-500">Telefone:</span> <span className="text-gray-800">{String(user.telefone)}</span></div>)}
             {(user.cidade || user.estado) && (
-              <div><span className="text-gray-500">Localidade:</span> <span className="text-gray-800">{[user.cidade, user.estado].filter(Boolean).join(' / ')}</span></div>
+              <div><span className="text-gray-500">Localidade:</span> <span className="text-gray-800">{[user.cidade, user.estado].filter(Boolean).map(String).join(' / ')}</span></div>
             )}
-            {user.cnpj && (<div><span className="text-gray-500">CNPJ:</span> <span className="text-gray-800">{user.cnpj}</span></div>)}
+            {user.cnpj && (<div><span className="text-gray-500">CNPJ:</span> <span className="text-gray-800">{String(user.cnpj)}</span></div>)}
             {user.userType === 'aluno' && (
               <>
-                {(user.curso || user.universidade) && <div><span className="text-gray-500">Formação:</span> <span className="text-gray-800">{[user.curso, user.universidade].filter(Boolean).join(' - ')}</span></div>}
+                {(user.curso || user.universidade) && <div><span className="text-gray-500">Formação:</span> <span className="text-gray-800">{[user.curso, user.universidade].filter(Boolean).map(String).join(' - ')}</span></div>}
                 {user.periodo && <div><span className="text-gray-500">Período:</span> <span className="text-gray-800">{user.periodo}</span></div>}
               </>
             )}
+            
             {user.userType === 'gestor' && (
               <>
-                {(user.nomeUniversidade || user.departamento) && <div><span className="text-gray-500">Instituição/Dep.:</span> <span className="text-gray-800">{[user.nomeUniversidade, user.departamento].filter(Boolean).join(' - ')}</span></div>}
+                {(user.nomeUniversidade || user.departamento) && <div><span className="text-gray-500">Instituição/Dep.:</span> <span className="text-gray-800">{[user.nomeUniversidade, user.departamento].filter(Boolean).map(String).join(' - ')}</span></div>}
                 {user.cargoGestor && <div><span className="text-gray-500">Cargo:</span> <span className="text-gray-800">{user.cargoGestor}</span></div>}
               </>
             )}
             {(user.nomeEmpresa || user.cargo || user.setor) && (
-              <div><span className="text-gray-500">Empresa/Cargo/Setor:</span> <span className="text-gray-800">{[user.nomeEmpresa, user.cargo, user.setor].filter(Boolean).join(' • ')}</span></div>
+              <div><span className="text-gray-500">Empresa/Cargo/Setor:</span> <span className="text-gray-800">{[user.nomeEmpresa, user.cargo, user.setor].filter(Boolean).map(String).join(' • ')}</span></div>
             )}
           </div>
 
@@ -93,7 +96,29 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
               </div>
             </div>
           )}
+
+          {user.aboutMe && (
+            <div className="mt-4">
+              <h3 className="text-sm font-semibold text-gray-900 mb-2">Sobre mim</h3>
+              <p className="text-sm text-gray-800 whitespace-pre-line">{user.aboutMe}</p>
+            </div>
+          )}
         </div>
+
+        {(user as any).experiences && Array.isArray((user as any).experiences) && (
+          <div className="bg-white border rounded-lg p-6">
+            <h2 className="text-lg font-semibold text-gray-900 mb-4">Experiências</h2>
+            {(user as any).experiences.length === 0 ? (
+              <p className="text-sm text-gray-600">Nenhuma experiência encontrada.</p>
+            ) : (
+              <div className="space-y-4">
+                {(user as any).experiences.map((e: any, idx: number) => (
+                  <ExperienceCard key={`exp-${idx}`} experience={e} />
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="bg-white border rounded-lg p-6">
           <h2 className="text-lg font-semibold text-gray-900 mb-4">Atividades</h2>

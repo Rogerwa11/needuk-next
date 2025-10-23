@@ -343,6 +343,9 @@ export default function EditActivityPage() {
             status: formData.status,
             startDate: formData.startDate,
             endDate: formData.endDate || null,
+            links: formData.links
+              .filter(l => l.title.trim() && l.url.trim())
+              .map(l => ({ title: l.title.trim(), url: l.url.trim() })),
         };
 
         saveActivityApi.execute(() =>

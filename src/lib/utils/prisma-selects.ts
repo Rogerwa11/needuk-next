@@ -57,6 +57,17 @@ export const publicTalentSelect = {
   goldMedals: true,
   silverMedals: true,
   bronzeMedals: true,
+  aboutMe: true,
+  experiences: {
+    select: {
+      company: true,
+      role: true,
+      details: true,
+      startDate: true,
+      endDate: true,
+    },
+    orderBy: { startDate: 'desc' as const },
+  },
 } as const;
 
 export const activityBasicSelect = {

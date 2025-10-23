@@ -11,12 +11,18 @@ import {
 } from '@/lib/utils';
 
 // Schema para atualização de atividade
+const linkSchema = z.object({
+    title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres'),
+    url: z.string().url('URL inválida'),
+});
+
 const updateActivitySchema = z.object({
     title: z.string().min(1, 'Título é obrigatório').max(200, 'Título deve ter no máximo 200 caracteres').optional(),
     description: z.string().max(1000, 'Descrição deve ter no máximo 1000 caracteres').optional(),
     status: z.enum(['pending', 'completed']).optional(),
     startDate: z.string().optional(),
     endDate: z.string().nullable().optional(),
+    links: z.array(linkSchema).max(50, 'Máximo de 50 links').optional(),
 });
 
 interface RouteParams {
@@ -112,11 +118,28 @@ export const PUT = withAuth(async (request: AuthenticatedRequest, { params }: Ro
             }
         }
 
-        // Atualizar atividade
-        const updatedActivity = await prisma.activity.update({
-            where: { id: activityId },
-            data: updateData,
-            select: activityDetailSelect,
+        // Atualizar atividade e substituir links (se enviados)
+        const updatedActivity = await prisma.$transaction(async (tx) => {
+            const act = await tx.activity.update({
+                where: { id: activityId },
+                data: updateData,
+                select: activityDetailSelect,
+            });
+
+            if (validatedData.links) {
+                await tx.activityLink.deleteMany({ where: { activityId } });
+                if (validatedData.links.length > 0) {
+                    await tx.activityLink.createMany({
+                        data: validatedData.links.map((l) => ({
+                            activityId,
+                            title: l.title,
+                            url: l.url,
+                        }))
+                    });
+                }
+            }
+
+            return act;
         });
 
         // Criar notificações para todos os participantes sobre a atualização
