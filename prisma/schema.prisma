@@ -64,6 +64,8 @@ model User {
   sentInvitations      ActivityInvitation[]  @relation("InvitationSender")
   receivedInvitations  ActivityInvitation[]  @relation("InvitationReceiver")
   notifications        Notification[]
+  badgesGiven          ActivityBadgeAward[]  @relation("BadgeAwardsBy")
+  badgesReceived       ActivityBadgeAward[]  @relation("BadgeAwardsTo")
 
   @@unique([email])
   @@map("user")
@@ -140,6 +142,7 @@ model Activity {
   invitations  ActivityInvitation[]
   observations ActivityObservation[]
   links        ActivityLink[]
+  badgeAwards  ActivityBadgeAward[]
 
   @@map("activity")
 }
@@ -207,9 +210,9 @@ model ActivityLink {
 
 // Experiências profissionais/academicas do usuário
 model Experience {
-  id        String   @id @default(cuid())
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   company   String
   role      String
@@ -237,4 +240,28 @@ model Notification {
   createdAt DateTime  @default(now())
 
   @@map("notification")
+}
+
+model ActivityBadgeAward {
+  id               String   @id @default(cuid())
+  activityId       String
+  activity         Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  badgeId          String
+  badgeName        String
+  badgeDescription String?
+  badgeIcon        String?
+  badgeColor       String?
+  badgeKeywords    String[]
+  awardedById      String
+  awardedBy        User     @relation("BadgeAwardsBy", fields: [awardedById], references: [id], onDelete: Cascade)
+  awardedToId      String
+  awardedTo        User     @relation("BadgeAwardsTo", fields: [awardedToId], references: [id], onDelete: Cascade)
+  note             String?
+  createdAt        DateTime @default(now())
+
+  @@unique([activityId, awardedById, awardedToId, badgeId])
+  @@index([activityId])
+  @@index([awardedById])
+  @@index([awardedToId])
+  @@map("activity_badge_award")
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -21,9 +21,46 @@ import {
     Award,
     Send,
     ExternalLink,
-    MoreHorizontal
+    MoreHorizontal,
+    BadgeCheck,
+    Search
 } from 'lucide-react';
 import { Input, showSuccess, showError, showWarning, confirmDanger, confirmWarning } from '@/components/ui';
+
+interface BadgeDefinition {
+    id: string;
+    name: string;
+    description: string;
+    icon: string;
+    color: string;
+    keywords: string[];
+}
+
+interface ActivityBadgeAward {
+    id: string;
+    badgeId: string;
+    badgeName: string;
+    badgeDescription: string | null;
+    badgeIcon: string | null;
+    badgeColor: string | null;
+    badgeKeywords: string[];
+    note: string | null;
+    createdAt: string;
+    awardedBy: {
+        id: string;
+        name: string;
+        email: string;
+        userType: string;
+        image: string | null;
+    };
+    awardedTo: {
+        id: string;
+        name: string;
+        email: string;
+        userType: string;
+        image: string | null;
+    };
+}
 
 interface Activity {
     id: string;
@@ -81,7 +118,19 @@ interface Activity {
         observations: number;
         links: number;
     };
+    badgeAwards: ActivityBadgeAward[];
 }
+
+type AggregatedBadge = {
+    badgeId: string;
+    badgeName: string;
+    badgeIcon: string | null;
+    badgeColor: string | null;
+    description: string | null;
+    count: number;
+    awardedByNames: string[];
+    notes: string[];
+};
 
 interface User {
     id: string;
@@ -110,6 +159,15 @@ export default function ActivityDetailPage() {
     const [selectedMedalType, setSelectedMedalType] = useState<'GOLD' | 'SILVER' | 'BRONZE'>('BRONZE');
     const [medalReason, setMedalReason] = useState('');
     const [awardingMedal, setAwardingMedal] = useState(false);
+    const [badgeModalOpen, setBadgeModalOpen] = useState(false);
+    const [badgeModalRecipient, setBadgeModalRecipient] = useState<{ id: string; name: string } | null>(null);
+    const [badgeResults, setBadgeResults] = useState<BadgeDefinition[]>([]);
+    const [badgeSearchTerm, setBadgeSearchTerm] = useState('');
+    const [selectedBadgeId, setSelectedBadgeId] = useState('');
+    const [badgeNote, setBadgeNote] = useState('');
+    const [loadingBadges, setLoadingBadges] = useState(false);
+    const [submittingBadge, setSubmittingBadge] = useState(false);
+    const [badgeFetchError, setBadgeFetchError] = useState<string | null>(null);
 
     const activityId = params.id as string;
 
@@ -212,6 +270,215 @@ export default function ActivityDetailPage() {
             showError('Erro ao conceder medalha');
         } finally {
             setAwardingMedal(false);
+        }
+    };
+
+    const fetchBadges = useCallback(async (query: string) => {
+        setLoadingBadges(true);
+        setBadgeFetchError(null);
+
+        try {
+            const response = await fetch(`/api/badges${query ? `?q=${encodeURIComponent(query)}` : ''}`);
+            if (!response.ok) {
+                throw new Error('Erro ao buscar emblemas');
+            }
+
+            const payload = await response.json().catch(() => null);
+            const badges = payload?.data?.badges ?? payload?.badges ?? [];
+            setBadgeResults(badges);
+        } catch (error) {
+            console.error('Erro ao buscar emblemas:', error);
+            setBadgeFetchError('Não foi possível carregar os emblemas. Tente novamente.');
+            setBadgeResults([]);
+        } finally {
+            setLoadingBadges(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (!badgeModalOpen) {
+            return;
+        }
+
+        const delay = badgeSearchTerm ? 300 : 0;
+        const handler = setTimeout(() => {
+            fetchBadges(badgeSearchTerm);
+        }, delay);
+
+        return () => clearTimeout(handler);
+    }, [badgeModalOpen, badgeSearchTerm, fetchBadges]);
+
+    const openBadgeModal = (participant: { id: string; name: string }) => {
+        setBadgeModalRecipient(participant);
+        setSelectedBadgeId('');
+        setBadgeNote('');
+        setBadgeSearchTerm('');
+        setBadgeResults([]);
+        setBadgeFetchError(null);
+        setLoadingBadges(true);
+        setBadgeModalOpen(true);
+    };
+
+    const closeBadgeModal = () => {
+        setBadgeModalOpen(false);
+        setBadgeModalRecipient(null);
+        setSelectedBadgeId('');
+        setBadgeNote('');
+        setBadgeSearchTerm('');
+        setBadgeResults([]);
+        setBadgeFetchError(null);
+        setSubmittingBadge(false);
+        setLoadingBadges(false);
+    };
+
+    const getGivenBadgeCount = useCallback(
+        (recipientId: string) => {
+            if (!activity || !currentUser) {
+                return 0;
+            }
+
+            return activity.badgeAwards.filter(
+                (award) => award.awardedBy.id === currentUser.id && award.awardedTo.id === recipientId
+            ).length;
+        },
+        [activity, currentUser]
+    );
+
+    const hasReachedBadgeLimit = useCallback(
+        (recipientId: string) => getGivenBadgeCount(recipientId) >= 2,
+        [getGivenBadgeCount]
+    );
+
+    const badgesByRecipient = useMemo(() => {
+        if (!activity) {
+            return {};
+        }
+
+        return activity.badgeAwards.reduce<Record<string, ActivityBadgeAward[]>>((acc, award) => {
+            if (!acc[award.awardedTo.id]) {
+                acc[award.awardedTo.id] = [];
+            }
+            acc[award.awardedTo.id].push(award);
+            return acc;
+        }, {});
+    }, [activity]);
+
+    const aggregateBadgeAwards = useCallback((awards: ActivityBadgeAward[]): AggregatedBadge[] => {
+        const grouped = new Map<
+            string,
+            {
+                badgeId: string;
+                badgeName: string;
+                badgeIcon: string | null;
+                badgeColor: string | null;
+                description: string | null;
+                count: number;
+                latestCreatedAt: string;
+                awardedByNames: Set<string>;
+                notes: string[];
+            }
+        >();
+
+        awards.forEach((award) => {
+            const existing = grouped.get(award.badgeId);
+            if (existing) {
+                existing.count += 1;
+                if (award.awardedBy.name) {
+                    existing.awardedByNames.add(award.awardedBy.name);
+                }
+                if (award.note) {
+                    existing.notes.push(award.note);
+                }
+                if (new Date(award.createdAt).getTime() > new Date(existing.latestCreatedAt).getTime()) {
+                    existing.latestCreatedAt = award.createdAt;
+                }
+            } else {
+                grouped.set(award.badgeId, {
+                    badgeId: award.badgeId,
+                    badgeName: award.badgeName,
+                    badgeIcon: award.badgeIcon,
+                    badgeColor: award.badgeColor,
+                    description: award.badgeDescription,
+                    count: 1,
+                    latestCreatedAt: award.createdAt,
+                    awardedByNames: new Set(award.awardedBy.name ? [award.awardedBy.name] : []),
+                    notes: award.note ? [award.note] : [],
+                });
+            }
+        });
+
+        return Array.from(grouped.values())
+            .sort(
+                (a, b) =>
+                    new Date(b.latestCreatedAt).getTime() - new Date(a.latestCreatedAt).getTime()
+            )
+            .map(({ awardedByNames, ...rest }) => ({
+                badgeId: rest.badgeId,
+                badgeName: rest.badgeName,
+                badgeIcon: rest.badgeIcon,
+                badgeColor: rest.badgeColor,
+                description: rest.description ?? null,
+                count: rest.count,
+                awardedByNames: Array.from(awardedByNames),
+                notes: rest.notes,
+            }));
+    }, []);
+
+    const aggregatedBadgesByRecipient = useMemo(() => {
+        const result: Record<string, AggregatedBadge[]> = {};
+        Object.entries(badgesByRecipient).forEach(([recipientId, awards]) => {
+            result[recipientId] = aggregateBadgeAwards(awards);
+        });
+        return result;
+    }, [aggregateBadgeAwards, badgesByRecipient]);
+
+    const currentBadgeCount = badgeModalRecipient ? getGivenBadgeCount(badgeModalRecipient.id) : 0;
+
+    const handleAwardBadge = async () => {
+        if (!badgeModalRecipient) {
+            return;
+        }
+
+        if (!selectedBadgeId) {
+            showWarning('Selecione um emblema para conceder');
+            return;
+        }
+
+        if (hasReachedBadgeLimit(badgeModalRecipient.id)) {
+            showWarning('Você já concedeu o máximo de 2 emblemas para esta pessoa nesta atividade.');
+            return;
+        }
+
+        setSubmittingBadge(true);
+
+        try {
+            const response = await fetch(`/api/activities/${activityId}/badges`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    badgeId: selectedBadgeId,
+                    awardedToId: badgeModalRecipient.id,
+                    note: badgeNote.trim() || undefined,
+                }),
+            });
+
+            const data = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                showError(data?.error || 'Erro ao conceder emblema');
+                return;
+            }
+
+            showSuccess('Emblema concedido com sucesso!');
+            closeBadgeModal();
+            await fetchActivity();
+        } catch (error) {
+            console.error('Erro ao conceder emblema:', error);
+            showError('Erro ao conceder emblema');
+        } finally {
+            setSubmittingBadge(false);
         }
     };
 
@@ -858,38 +1125,110 @@ export default function ActivityDetailPage() {
                                 Participantes ({activity.participants.length})
                             </h2>
                             <div className="space-y-3">
-                                {activity.participants.map((participant) => (
-                                    <div key={participant.id} className="flex items-center justify-between">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-                                                {participant.user.image ? (
-                                                    <img
-                                                        src={participant.user.image}
-                                                        alt={participant.user.name}
-                                                        className="w-full h-full rounded-full object-cover"
-                                                    />
-                                                ) : (
-                                                    <User className="w-4 h-4 text-purple-600" />
-                                                )}
-                                            </div>
-                                            <div>
-                                                <p className="text-sm font-medium text-gray-900">
-                                                    {participant.user.name}
-                                                </p>
+                                {activity.participants.map((participant) => {
+                                    const participantAwards = badgesByRecipient[participant.userId] || [];
+                                    const aggregatedBadges = aggregatedBadgesByRecipient[participant.userId] || [];
+                                    const badgesGivenByMe = currentUser
+                                        ? participantAwards.filter((award) => award.awardedBy.id === currentUser.id)
+                                        : [];
+                                    const reachedLimit = currentUser ? badgesGivenByMe.length >= 2 : false;
+
+                                    return (
+                                        <div
+                                            key={participant.id}
+                                            className="border border-transparent rounded-lg p-3 hover:bg-gray-50 transition-colors"
+                                        >
+                                            <div className="flex items-start justify-between gap-3">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
+                                                        {participant.user.image ? (
+                                                            <img
+                                                                src={participant.user.image}
+                                                                alt={participant.user.name}
+                                                                className="w-full h-full rounded-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <User className="w-4 h-4 text-purple-600" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-medium text-gray-900">
+                                                            {participant.user.name}
+                                                        </p>
+                                                        <div className="flex items-center gap-2">
+                                                            {participant.userId === activity.leaderId && (
+                                                                <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded">
+                                                                    Líder
+                                                                </span>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div className="flex items-center gap-2">
                                                     {participant.userId === activity.leaderId && (
-                                                        <span className="text-xs font-medium text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded">
-                                                            Líder
-                                                        </span>
+                                                        <Crown className="w-4 h-4 text-yellow-600" />
+                                                    )}
+                                                    {isParticipant && currentUser?.id !== participant.userId && (
+                                                        <button
+                                                            onClick={() =>
+                                                                openBadgeModal({
+                                                                    id: participant.userId,
+                                                                    name: participant.user.name,
+                                                                })
+                                                            }
+                                                            disabled={reachedLimit || submittingBadge}
+                                                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-purple-200 text-purple-600 text-xs font-medium hover:bg-purple-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            title={
+                                                                reachedLimit
+                                                                    ? 'Limite de 2 emblemas já atingido para este participante'
+                                                                    : 'Conceder emblema'
+                                                            }
+                                                        >
+                                                            <BadgeCheck className="w-3 h-3" />
+                                                            {reachedLimit ? 'Limite atingido' : 'Conceder emblema'}
+                                                        </button>
                                                     )}
                                                 </div>
                                             </div>
+                                            {aggregatedBadges.length > 0 && (
+                                                <div className="flex flex-wrap gap-2 mt-2">
+                                                    {aggregatedBadges.map((badge) => {
+                                                        const tooltip = [
+                                                            badge.description,
+                                                            `Recebido ${badge.count} ${badge.count > 1 ? 'vezes' : 'vez'}`,
+                                                            badge.awardedByNames.length
+                                                                ? `Concedido por: ${badge.awardedByNames.join(', ')}`
+                                                                : null,
+                                                            badge.notes.length
+                                                                ? `Mensagens: ${badge.notes.join(' | ')}`
+                                                                : null,
+                                                        ]
+                                                            .filter(Boolean)
+                                                            .join(' • ');
+
+                                                        return (
+                                                            <span
+                                                                key={`${participant.userId}-${badge.badgeId}`}
+                                                                title={tooltip}
+                                                                className="inline-flex items-center gap-1 px-2 py-1 rounded-full border text-xs font-medium bg-white"
+                                                                style={{
+                                                                    borderColor: badge.badgeColor || '#c4b5fd',
+                                                                    color: badge.badgeColor || '#6b21a8',
+                                                                }}
+                                                            >
+                                                                <span>{badge.badgeIcon || '🏅'}</span>
+                                                                <span>
+                                                                    {badge.badgeName}
+                                                                    {badge.count > 1 ? ` ×${badge.count}` : ''}
+                                                                </span>
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
-                                        {participant.userId === activity.leaderId && (
-                                            <Crown className="w-4 h-4 text-yellow-600" />
-                                        )}
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -1016,7 +1355,7 @@ export default function ActivityDetailPage() {
                                 >
                                     <option value="">Selecione um aluno</option>
                                     {activity.participants
-                                        .filter(p => p.user.userType === 'aluno')
+                                        .filter(p => p.user.userType === 'aluno' && p.userId !== currentUser?.id)
                                         .map((participant) => (
                                             <option key={participant.userId} value={participant.userId}>
                                                 {participant.user.name} ({participant.role || 'Sem função'})
@@ -1109,6 +1448,148 @@ export default function ActivityDetailPage() {
                                         <>
                                             <Award className="w-4 h-4" />
                                             Conceder
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {badgeModalOpen && badgeModalRecipient && (
+                <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+                    <div className="bg-gray-50 rounded-lg shadow-xl w-full max-w-xl max-h-[90vh] overflow-y-auto p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div>
+                                <h3 className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                                    <BadgeCheck className="w-5 h-5 text-purple-600" />
+                                    Conceder emblema
+                                </h3>
+                                <p className="text-sm text-gray-600">
+                                    Para {badgeModalRecipient.name}
+                                </p>
+                            </div>
+                            <button
+                                onClick={closeBadgeModal}
+                                className="text-gray-400 hover:text-gray-600"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <div className="space-y-5">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Buscar emblema
+                                </label>
+                                <div className="relative">
+                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                    <input
+                                        type="text"
+                                        value={badgeSearchTerm}
+                                        onChange={(e) => setBadgeSearchTerm(e.target.value)}
+                                        placeholder="Pesquisar por nome ou palavra-chave"
+                                        className="text-black w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                    />
+                                </div>
+                                <p className="text-xs text-gray-500 mt-2">
+                                    Você já concedeu {currentBadgeCount} de 2 emblemas para este participante.
+                                </p>
+                                {badgeFetchError && (
+                                    <p className="text-sm text-red-600 mt-2">{badgeFetchError}</p>
+                                )}
+                            </div>
+
+                            <div className="space-y-2">
+                                {loadingBadges ? (
+                                    <div className="flex justify-center py-6">
+                                        <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                                    </div>
+                                ) : badgeResults.length > 0 ? (
+                                    badgeResults.map((badge) => {
+                                        const isSelected = selectedBadgeId === badge.id;
+                                        return (
+                                            <button
+                                                key={badge.id}
+                                                type="button"
+                                                onClick={() => setSelectedBadgeId(badge.id)}
+                                                className={`w-full text-left border rounded-lg p-4 transition-colors ${isSelected
+                                                    ? 'border-purple-500 bg-purple-50'
+                                                    : 'border-gray-200 hover:border-purple-300'
+                                                    }`}
+                                            >
+                                                <div className="flex items-start gap-4">
+                                                    <span className="text-3xl" aria-hidden="true">
+                                                        {badge.icon}
+                                                    </span>
+                                                    <div className="flex-1">
+                                                        <p className="font-semibold text-gray-900">
+                                                            {badge.name}
+                                                        </p>
+                                                        <p className="text-sm text-gray-600 mt-1">
+                                                            {badge.description}
+                                                        </p>
+                                                        <div className="flex flex-wrap gap-2 mt-3">
+                                                            {badge.keywords.map((keyword) => (
+                                                                <span
+                                                                    key={keyword}
+                                                                    className="text-xs px-2 py-0.5 rounded-full bg-gray-200 text-gray-700"
+                                                                >
+                                                                    {keyword}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </button>
+                                        );
+                                    })
+                                ) : (
+                                    <p className="text-sm text-gray-500 text-center py-4">
+                                        Nenhum emblema encontrado para esta pesquisa.
+                                    </p>
+                                )}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                    Mensagem (opcional)
+                                </label>
+                                <textarea
+                                    value={badgeNote}
+                                    onChange={(e) => setBadgeNote(e.target.value)}
+                                    maxLength={280}
+                                    rows={3}
+                                    placeholder="Deixe um elogio ou destaque sobre este emblema..."
+                                    className="w-full text-black px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                                />
+                                <div className="text-xs text-gray-500 text-right mt-1">
+                                    {badgeNote.length}/280
+                                </div>
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button
+                                    onClick={closeBadgeModal}
+                                    className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    onClick={handleAwardBadge}
+                                    disabled={submittingBadge || !selectedBadgeId}
+                                    className="flex-1 bg-purple-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+                                >
+                                    {submittingBadge ? (
+                                        <>
+                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            Concedendo...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <BadgeCheck className="w-4 h-4" />
+                                            Conceder emblema
                                         </>
                                     )}
                                 </button>

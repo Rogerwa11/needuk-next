@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { z } from 'zod';
 import { useForm, useApi } from '@/hooks/custom';
@@ -27,6 +27,7 @@ import {
     Camera,
     Upload,
     Award,
+    BadgeCheck,
     ChevronDown,
     ChevronUp,
 } from 'lucide-react';
@@ -89,6 +90,18 @@ interface ProfileFormProps {
         goldMedals?: number;
         silverMedals?: number;
         bronzeMedals?: number;
+        badgesReceived?: {
+            id: string;
+            badgeId: string;
+            badgeName: string;
+            badgeDescription?: string | null;
+            badgeIcon?: string | null;
+            badgeColor?: string | null;
+            note?: string | null;
+            createdAt: string;
+            activity?: { id: string; title: string };
+            awardedBy?: { id: string; name: string };
+        }[];
         cpf?: string | null;
         cnpj?: string | null;
         curso?: string | null;
@@ -115,6 +128,73 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
     const [expanded, setExpanded] = useState<Record<number, boolean>>({});
+    const badges = user.badgesReceived || [];
+    const aggregatedBadges = useMemo(() => {
+        const grouped = new Map<
+            string,
+            {
+                badgeId: string;
+                badgeName: string;
+                badgeIcon: string | null;
+                badgeColor: string | null;
+                description: string | null;
+                count: number;
+                latestCreatedAt: string;
+                awardedByNames: Set<string>;
+                activityTitles: Set<string>;
+                notes: string[];
+            }
+        >();
+
+        badges.forEach((badge) => {
+            const existing = grouped.get(badge.badgeId);
+            if (existing) {
+                existing.count += 1;
+                if (badge.awardedBy?.name) {
+                    existing.awardedByNames.add(badge.awardedBy.name);
+                }
+                if (badge.activity?.title) {
+                    existing.activityTitles.add(badge.activity.title);
+                }
+                if (badge.note) {
+                    existing.notes.push(badge.note);
+                }
+                if (new Date(badge.createdAt).getTime() > new Date(existing.latestCreatedAt).getTime()) {
+                    existing.latestCreatedAt = badge.createdAt;
+                }
+            } else {
+                grouped.set(badge.badgeId, {
+                    badgeId: badge.badgeId,
+                    badgeName: badge.badgeName,
+                    badgeIcon: badge.badgeIcon ?? null,
+                    badgeColor: badge.badgeColor ?? null,
+                    description: badge.badgeDescription ?? null,
+                    count: 1,
+                    latestCreatedAt: badge.createdAt,
+                    awardedByNames: new Set(badge.awardedBy?.name ? [badge.awardedBy.name] : []),
+                    activityTitles: new Set(badge.activity?.title ? [badge.activity.title] : []),
+                    notes: badge.note ? [badge.note] : [],
+                });
+            }
+        });
+
+        return Array.from(grouped.values())
+            .sort(
+                (a, b) =>
+                    new Date(b.latestCreatedAt).getTime() - new Date(a.latestCreatedAt).getTime()
+            )
+            .map(({ awardedByNames, activityTitles, ...rest }) => ({
+                badgeId: rest.badgeId,
+                badgeName: rest.badgeName,
+                badgeIcon: rest.badgeIcon,
+                badgeColor: rest.badgeColor,
+                description: rest.description,
+                count: rest.count,
+                awardedByNames: Array.from(awardedByNames),
+                activityTitles: Array.from(activityTitles),
+                notes: rest.notes,
+            }));
+    }, [badges]);
 
     // Hooks auxiliares: CEP e Autocomplete
     const cep = useCep();
@@ -145,8 +225,8 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                 company: e.company,
                 role: e.role,
                 details: (e as any).details || '',
-                startDate: typeof e.startDate === 'string' ? e.startDate : new Date(e.startDate).toISOString().slice(0,10),
-                endDate: e.endDate ? (typeof e.endDate === 'string' ? e.endDate : new Date(e.endDate).toISOString().slice(0,10)) : '',
+                startDate: typeof e.startDate === 'string' ? e.startDate : new Date(e.startDate).toISOString().slice(0, 10),
+                endDate: e.endDate ? (typeof e.endDate === 'string' ? e.endDate : new Date(e.endDate).toISOString().slice(0, 10)) : '',
             })),
         },
         validationSchema: profileSchema,
@@ -596,6 +676,57 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                                     <p className="text-xs text-gray-500 text-center">Medalhas por participação e desempenho</p>
                                 </div>
                             )}
+
+                            {/* Emblemas recebidos */}
+                            <div className="space-y-2 w-full">
+                                <label className="text-gray-700 font-semibold flex items-center gap-2 justify-center">
+                                    <BadgeCheck className="w-4 h-4" />
+                                    Emblemas recebidos
+                                </label>
+                                {aggregatedBadges.length > 0 ? (
+                                    <div className="flex flex-wrap gap-2 justify-center">
+                                        {aggregatedBadges.map((badge) => {
+                                            const tooltip = [
+                                                badge.description,
+                                                `Recebido ${badge.count} ${badge.count > 1 ? 'vezes' : 'vez'}`,
+                                                badge.awardedByNames.length
+                                                    ? `Concedido por: ${badge.awardedByNames.join(', ')}`
+                                                    : null,
+                                                badge.activityTitles.length
+                                                    ? `Atividades: ${badge.activityTitles.join(', ')}`
+                                                    : null,
+                                                badge.notes.length
+                                                    ? `Mensagens: ${badge.notes.join(' | ')}`
+                                                    : null,
+                                            ]
+                                                .filter(Boolean)
+                                                .join(' • ');
+
+                                            return (
+                                                <span
+                                                    key={badge.badgeId}
+                                                    title={tooltip || 'Emblema conquistado'}
+                                                    className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-medium bg-white"
+                                                    style={{
+                                                        borderColor: badge.badgeColor || '#c4b5fd',
+                                                        color: badge.badgeColor || '#6b21a8',
+                                                    }}
+                                                >
+                                                    <span>{badge.badgeIcon || '🏅'}</span>
+                                                    <span>
+                                                        {badge.badgeName}
+                                                        {badge.count > 1 ? ` ×${badge.count}` : ''}
+                                                    </span>
+                                                </span>
+                                            );
+                                        })}
+                                    </div>
+                                ) : (
+                                    <p className="text-xs text-gray-500 text-center">
+                                        Nenhum emblema recebido ainda.
+                                    </p>
+                                )}
+                            </div>
                         </div>
 
                         {/* Campos de Texto */}
@@ -810,140 +941,140 @@ export const ProfileForm = ({ user }: ProfileFormProps) => {
                     </div>
                 </div>
 
-        {/* Sobre mim (aluno e gestor) */}
-        {(user.userType === 'aluno' || user.userType === 'gestor') && (
-            <div className={`${cardStyles.base} ${cardStyles.padding}`}>
-                <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Sobre mim
-                </h2>
-                <div className="space-y-2">
-                    <textarea
-                        value={form.values.aboutMe || ''}
-                        onChange={(e) => handleInputChange('aboutMe', e.target.value)}
-                        placeholder="Conte um pouco sobre você, objetivos, conquistas..."
-                        maxLength={1000}
-                        rows={5}
-                        className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.aboutMe
-                            ? 'border-red-500 focus:ring-red-500'
-                            : 'border-gray-300 focus:ring-purple-500'
-                            }`}
-                    />
-                    <div className="text-xs text-gray-500 text-right">{(form.values.aboutMe?.length || 0)}/1000</div>
-                    {form.errors.aboutMe && (
-                        <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
-                            <AlertCircle className="h-4 w-4" />
-                            {form.errors.aboutMe}
-                        </p>
-                    )}
-                </div>
-            </div>
-        )}
-
-        {/* Experiências (aluno e gestor) */}
-        {(user.userType === 'aluno' || user.userType === 'gestor') && (
-            <div className={`${cardStyles.base} ${cardStyles.padding}`}>
-                <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
-                        <Briefcase className="w-5 h-5" />
-                        Experiências
-                    </h2>
-                    <button type="button" onClick={addExperience} className="text-white bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm">Adicionar</button>
-                </div>
-
-                {(form.values.experiences || []).length === 0 && (
-                    <p className="text-sm text-gray-600">Nenhuma experiência adicionada.</p>
-                )}
-
-                <div className="space-y-4">
-                    {(form.values.experiences || []).map((exp, idx) => (
-                        <div key={idx} className="p-4 border rounded-lg bg-white">
-                            {/* Header compacto sempre visível */}
-                            <div className="flex items-center justify-between">
-                                <div className="text-sm text-gray-900 font-medium">
-                                    {exp.role || 'Função não informada'} • {exp.company || 'Empresa não informada'}
-                                </div>
-                                <button type="button" onClick={() => toggleExpanded(idx)} className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1">
-                                    {expanded[idx] ? (
-                                        <>
-                                            Recolher <ChevronUp className="w-4 h-4" />
-                                        </>
-                                    ) : (
-                                        <>
-                                            Expandir <ChevronDown className="w-4 h-4" />
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {expanded[idx] && (
-                                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    <div className="space-y-2">
-                                        <label className="text-gray-700 font-semibold block">Empresa</label>
-                                        <input
-                                            type="text"
-                                            value={exp.company}
-                                            onChange={(e) => updateExperience(idx, 'company', e.target.value)}
-                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.company` as any]
-                                                ? 'border-red-500 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-purple-500'
-                                                }`}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-gray-700 font-semibold block">Função</label>
-                                        <input
-                                            type="text"
-                                            value={exp.role}
-                                            onChange={(e) => updateExperience(idx, 'role', e.target.value)}
-                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.role` as any]
-                                                ? 'border-red-500 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-purple-500'
-                                                }`}
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2 space-y-2">
-                                        <label className="text-gray-700 font-semibold block">Detalhes</label>
-                                        <textarea
-                                            value={(exp as any).details || ''}
-                                            onChange={(e) => updateExperience(idx, 'details', e.target.value)}
-                                            placeholder="Descrição das atividades, tecnologias, conquistas..."
-                                            maxLength={1000}
-                                            rows={3}
-                                            className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.details` as any]
-                                                ? 'border-red-500 focus:ring-red-500'
-                                                : 'border-gray-300 focus:ring-purple-500'
-                                                }`}
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-gray-700 font-semibold block">Início</label>
-                                        <input
-                                            type="date"
-                                            value={exp.startDate as string}
-                                            onChange={(e) => updateExperience(idx, 'startDate', e.target.value)}
-                                            className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
-                                        />
-                                    </div>
-                                    <div className="space-y-2">
-                                        <label className="text-gray-700 font-semibold block">Fim (opcional)</label>
-                                        <input
-                                            type="date"
-                                            value={(exp.endDate as string) || ''}
-                                            onChange={(e) => updateExperience(idx, 'endDate', e.target.value)}
-                                            className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
-                                        />
-                                    </div>
-                                    <div className="md:col-span-2 mt-2 text-right">
-                                        <button type="button" onClick={() => removeExperience(idx)} className="text-sm text-red-600 hover:text-red-700">Remover</button>
-                                    </div>
-                                </div>
+                {/* Sobre mim (aluno e gestor) */}
+                {(user.userType === 'aluno' || user.userType === 'gestor') && (
+                    <div className={`${cardStyles.base} ${cardStyles.padding}`}>
+                        <h2 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                            <FileText className="w-5 h-5" />
+                            Sobre mim
+                        </h2>
+                        <div className="space-y-2">
+                            <textarea
+                                value={form.values.aboutMe || ''}
+                                onChange={(e) => handleInputChange('aboutMe', e.target.value)}
+                                placeholder="Conte um pouco sobre você, objetivos, conquistas..."
+                                maxLength={1000}
+                                rows={5}
+                                className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors.aboutMe
+                                    ? 'border-red-500 focus:ring-red-500'
+                                    : 'border-gray-300 focus:ring-purple-500'
+                                    }`}
+                            />
+                            <div className="text-xs text-gray-500 text-right">{(form.values.aboutMe?.length || 0)}/1000</div>
+                            {form.errors.aboutMe && (
+                                <p className="text-red-500 text-sm flex items-center gap-1 mt-1">
+                                    <AlertCircle className="h-4 w-4" />
+                                    {form.errors.aboutMe}
+                                </p>
                             )}
                         </div>
-                    ))}
-                </div>
-            </div>
-        )}
+                    </div>
+                )}
+
+                {/* Experiências (aluno e gestor) */}
+                {(user.userType === 'aluno' || user.userType === 'gestor') && (
+                    <div className={`${cardStyles.base} ${cardStyles.padding}`}>
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-xl font-semibold text-gray-800 flex items-center gap-2">
+                                <Briefcase className="w-5 h-5" />
+                                Experiências
+                            </h2>
+                            <button type="button" onClick={addExperience} className="text-white bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded-lg text-sm">Adicionar</button>
+                        </div>
+
+                        {(form.values.experiences || []).length === 0 && (
+                            <p className="text-sm text-gray-600">Nenhuma experiência adicionada.</p>
+                        )}
+
+                        <div className="space-y-4">
+                            {(form.values.experiences || []).map((exp, idx) => (
+                                <div key={idx} className="p-4 border rounded-lg bg-white">
+                                    {/* Header compacto sempre visível */}
+                                    <div className="flex items-center justify-between">
+                                        <div className="text-sm text-gray-900 font-medium">
+                                            {exp.role || 'Função não informada'} • {exp.company || 'Empresa não informada'}
+                                        </div>
+                                        <button type="button" onClick={() => toggleExpanded(idx)} className="text-sm text-purple-600 hover:text-purple-700 flex items-center gap-1">
+                                            {expanded[idx] ? (
+                                                <>
+                                                    Recolher <ChevronUp className="w-4 h-4" />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    Expandir <ChevronDown className="w-4 h-4" />
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+
+                                    {expanded[idx] && (
+                                        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            <div className="space-y-2">
+                                                <label className="text-gray-700 font-semibold block">Empresa</label>
+                                                <input
+                                                    type="text"
+                                                    value={exp.company}
+                                                    onChange={(e) => updateExperience(idx, 'company', e.target.value)}
+                                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.company` as any]
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-purple-500'
+                                                        }`}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-gray-700 font-semibold block">Função</label>
+                                                <input
+                                                    type="text"
+                                                    value={exp.role}
+                                                    onChange={(e) => updateExperience(idx, 'role', e.target.value)}
+                                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.role` as any]
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-purple-500'
+                                                        }`}
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 space-y-2">
+                                                <label className="text-gray-700 font-semibold block">Detalhes</label>
+                                                <textarea
+                                                    value={(exp as any).details || ''}
+                                                    onChange={(e) => updateExperience(idx, 'details', e.target.value)}
+                                                    placeholder="Descrição das atividades, tecnologias, conquistas..."
+                                                    maxLength={1000}
+                                                    rows={3}
+                                                    className={`text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 ${form.errors[`experiences.${idx}.details` as any]
+                                                        ? 'border-red-500 focus:ring-red-500'
+                                                        : 'border-gray-300 focus:ring-purple-500'
+                                                        }`}
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-gray-700 font-semibold block">Início</label>
+                                                <input
+                                                    type="date"
+                                                    value={exp.startDate as string}
+                                                    onChange={(e) => updateExperience(idx, 'startDate', e.target.value)}
+                                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                                />
+                                            </div>
+                                            <div className="space-y-2">
+                                                <label className="text-gray-700 font-semibold block">Fim (opcional)</label>
+                                                <input
+                                                    type="date"
+                                                    value={(exp.endDate as string) || ''}
+                                                    onChange={(e) => updateExperience(idx, 'endDate', e.target.value)}
+                                                    className="text-black w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500"
+                                                />
+                                            </div>
+                                            <div className="md:col-span-2 mt-2 text-right">
+                                                <button type="button" onClick={() => removeExperience(idx)} className="text-sm text-red-600 hover:text-red-700">Remover</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* Campos específicos por tipo de usuário */}
                 {renderSpecificFields()}

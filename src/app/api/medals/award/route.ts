@@ -19,6 +19,10 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
         const body = await request.json();
         const { medalType, userId, activityId, reason } = awardMedalSchema.parse(body);
 
+        if (userId === request.user.id) {
+            return forbiddenResponse('Você não pode conceder uma medalha para si mesmo');
+        }
+
         // Verificar se é gestor ou líder da atividade
         const currentUser = await prisma.user.findUnique({
             where: { id: request.user.id },

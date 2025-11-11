@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma'
 import { publicTalentSelect, activityDetailSelect } from '@/lib/utils/prisma-selects'
+import { BadgeCheck } from 'lucide-react'
 import Link from 'next/link'
 import { ActivityCard } from './_components/ActivityCard'
 import { ExperienceCard } from './_components/ExperienceCard'
@@ -33,6 +34,73 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
   })
 
   const activities = participations.map(p => p.activity)
+  const badges: any[] = Array.isArray((user as any).badgesReceived) ? (user as any).badgesReceived : []
+  const aggregatedBadges = (() => {
+    const grouped = new Map<
+      string,
+      {
+        badgeId: string
+        badgeName: string
+        badgeIcon?: string | null
+        badgeColor?: string | null
+        description?: string | null
+        count: number
+        latestCreatedAt: string
+        awardedByNames: Set<string>
+        activityTitles: Set<string>
+        notes: string[]
+      }
+    >()
+
+    badges.forEach((badge: any) => {
+      const existing = grouped.get(badge.badgeId)
+      if (existing) {
+        existing.count += 1
+        if (badge.awardedBy?.name) {
+          existing.awardedByNames.add(badge.awardedBy.name)
+        }
+        if (badge.activity?.title) {
+          existing.activityTitles.add(badge.activity.title)
+        }
+        if (badge.note) {
+          existing.notes.push(badge.note)
+        }
+        if (new Date(badge.createdAt).getTime() > new Date(existing.latestCreatedAt).getTime()) {
+          existing.latestCreatedAt = badge.createdAt
+        }
+      } else {
+        grouped.set(badge.badgeId, {
+          badgeId: badge.badgeId,
+          badgeName: badge.badgeName,
+          badgeIcon: badge.badgeIcon ?? null,
+          badgeColor: badge.badgeColor ?? null,
+          description: badge.badgeDescription ?? null,
+          count: 1,
+          latestCreatedAt: badge.createdAt,
+          awardedByNames: new Set(badge.awardedBy?.name ? [badge.awardedBy.name] : []),
+          activityTitles: new Set(badge.activity?.title ? [badge.activity.title] : []),
+          notes: badge.note ? [badge.note] : [],
+        })
+      }
+    })
+
+    return Array.from(grouped.values())
+      .sort(
+        (a, b) =>
+          new Date(b.latestCreatedAt).getTime() - new Date(a.latestCreatedAt).getTime()
+      )
+      .map(({ awardedByNames, activityTitles, ...rest }) => ({
+        badgeId: rest.badgeId,
+        badgeName: rest.badgeName,
+        badgeIcon: rest.badgeIcon,
+        badgeColor: rest.badgeColor,
+        description: rest.description,
+        count: rest.count,
+        awardedByNames: Array.from(awardedByNames),
+        activityTitles: Array.from(activityTitles),
+        notes: rest.notes,
+      }))
+  })()
 
   return (
     <div className="min-h-screen bg-gray-50 p-4">
@@ -45,8 +113,8 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
             <div>
               <h1 className="text-xl font-bold text-gray-900">{String(user.name || user.email)}</h1>
               <p className="text-sm text-gray-600 capitalize">{user.userType}</p>
-          </div>
-          
+            </div>
+
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">
@@ -62,7 +130,7 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
                 {user.periodo && <div><span className="text-gray-500">Período:</span> <span className="text-gray-800">{user.periodo}</span></div>}
               </>
             )}
-            
+
             {user.userType === 'gestor' && (
               <>
                 {(user.nomeUniversidade || user.departamento) && <div><span className="text-gray-500">Instituição/Dep.:</span> <span className="text-gray-800">{[user.nomeUniversidade, user.departamento].filter(Boolean).map(String).join(' - ')}</span></div>}
@@ -96,6 +164,48 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
               </div>
             </div>
           )}
+
+          <div className="mt-4">
+            <h3 className="text-sm font-semibold text-gray-900 mb-2 flex items-center gap-2">
+              <BadgeCheck className="w-4 h-4" />
+              Emblemas recebidos
+            </h3>
+            {aggregatedBadges.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {aggregatedBadges.map((badge) => {
+                  const tooltip = [
+                    badge.description,
+                    `Recebido ${badge.count} ${badge.count > 1 ? 'vezes' : 'vez'}`,
+                    badge.awardedByNames.length ? `Concedido por: ${badge.awardedByNames.join(', ')}` : null,
+                    badge.activityTitles.length ? `Atividades: ${badge.activityTitles.join(', ')}` : null,
+                    badge.notes.length ? `Mensagens: ${badge.notes.join(' | ')}` : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' • ')
+
+                  return (
+                    <span
+                      key={badge.badgeId}
+                      title={tooltip || 'Emblema conquistado'}
+                      className="inline-flex items-center gap-1 px-3 py-1 rounded-full border text-xs font-medium bg-white"
+                      style={{
+                        borderColor: badge.badgeColor || '#c4b5fd',
+                        color: badge.badgeColor || '#6b21a8',
+                      }}
+                    >
+                      <span>{badge.badgeIcon || '🏅'}</span>
+                      <span>
+                        {badge.badgeName}
+                        {badge.count > 1 ? ` ×${badge.count}` : ''}
+                      </span>
+                    </span>
+                  )
+                })}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">Nenhum emblema recebido até o momento.</p>
+            )}
+          </div>
 
           {user.aboutMe && (
             <div className="mt-4">

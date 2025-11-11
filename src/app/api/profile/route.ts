@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { withAuth, validationErrorResponse, userProfileSelect, AuthenticatedRequest } from '@/lib/utils';
+import { withAuth, validationErrorResponse, userProfileSelect, userBadgeAwardSelect, AuthenticatedRequest } from '@/lib/utils';
 import { successResponse, serverErrorResponse, notFoundResponse } from '@/lib/utils';
 import { validationUtils } from '@/utils/validation-helpers';
 
@@ -88,9 +88,15 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
                     departamento: validatedData.departamento || null,
                     cargoGestor: validatedData.cargoGestor || null,
                     // aboutMe ainda não existe nos tipos locais até gerar Prisma; cast para any
-                    ...( { aboutMe: validatedData.aboutMe || null } as any ),
+                    ...({ aboutMe: validatedData.aboutMe || null } as any),
                 } as any,
-                select: userProfileSelect as any,
+                select: ({
+                    ...userProfileSelect,
+                    badgesReceived: {
+                        select: userBadgeAwardSelect,
+                        orderBy: { createdAt: 'desc' as const },
+                    },
+                } as any),
             });
 
             // Se experiências foram enviadas, substituir todas do usuário
@@ -136,6 +142,10 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
                 experiences: {
                     select: { id: true, company: true, role: true, details: true, startDate: true, endDate: true },
                     orderBy: { startDate: 'desc' as const },
+                },
+                badgesReceived: {
+                    select: userBadgeAwardSelect,
+                    orderBy: { createdAt: 'desc' as const },
                 },
             } as any),
         });

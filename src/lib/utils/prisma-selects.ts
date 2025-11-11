@@ -34,40 +34,93 @@ export const userProfileSelect = {
     updatedAt: true,
 } as const;
 
+export const publicBadgeAwardSelect = {
+    id: true,
+    badgeId: true,
+    badgeName: true,
+    badgeIcon: true,
+    badgeColor: true,
+    createdAt: true,
+} as const;
+
+
 // Select público para o Banco de Talentos (NÃO expõe CPF)
 export const publicTalentSelect = {
-  id: true,
-  name: true,
-  email: true,
-  telefone: true,
-  image: true,
-  userType: true,
-  cidade: true,
-  estado: true,
-  cnpj: true,
-  curso: true,
-  universidade: true,
-  periodo: true,
-  nomeUniversidade: true,
-  departamento: true,
-  cargoGestor: true,
-  nomeEmpresa: true,
-  cargo: true,
-  setor: true,
-  goldMedals: true,
-  silverMedals: true,
-  bronzeMedals: true,
-  aboutMe: true,
-  experiences: {
-    select: {
-      company: true,
-      role: true,
-      details: true,
-      startDate: true,
-      endDate: true,
+    id: true,
+    name: true,
+    email: true,
+    telefone: true,
+    image: true,
+    userType: true,
+    cidade: true,
+    estado: true,
+    cnpj: true,
+    curso: true,
+    universidade: true,
+    periodo: true,
+    nomeUniversidade: true,
+    departamento: true,
+    cargoGestor: true,
+    nomeEmpresa: true,
+    cargo: true,
+    setor: true,
+    goldMedals: true,
+    silverMedals: true,
+    bronzeMedals: true,
+    aboutMe: true,
+    experiences: {
+        select: {
+            company: true,
+            role: true,
+            details: true,
+            startDate: true,
+            endDate: true,
+        },
+        orderBy: { startDate: 'desc' as const },
     },
-    orderBy: { startDate: 'desc' as const },
-  },
+    badgesReceived: {
+        select: publicBadgeAwardSelect,
+        orderBy: { createdAt: 'desc' as const },
+    },
+} as const;
+
+export const activityBadgeAwardSelect = {
+    id: true,
+    badgeId: true,
+    badgeName: true,
+    badgeDescription: true,
+    badgeIcon: true,
+    badgeColor: true,
+    badgeKeywords: true,
+    note: true,
+    createdAt: true,
+    awardedBy: {
+        select: userBasicSelect,
+    },
+    awardedTo: {
+        select: userBasicSelect,
+    },
+} as const;
+
+export const userBadgeAwardSelect = {
+    id: true,
+    badgeId: true,
+    badgeName: true,
+    badgeDescription: true,
+    badgeIcon: true,
+    badgeColor: true,
+    badgeKeywords: true,
+    note: true,
+    createdAt: true,
+    activity: {
+        select: {
+            id: true,
+            title: true,
+        },
+    },
+    awardedBy: {
+        select: userBasicSelect,
+    },
 } as const;
 
 export const activityBasicSelect = {
@@ -125,6 +178,12 @@ export const activityDetailSelect = {
                 },
             },
         },
+    },
+    badgeAwards: {
+        orderBy: {
+            createdAt: 'desc',
+        },
+        select: activityBadgeAwardSelect,
     },
     _count: {
         select: {

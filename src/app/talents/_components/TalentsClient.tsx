@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useApi } from '@/hooks/custom'
-import { User, GraduationCap, Building2, Briefcase, MapPin, Search, ChevronLeft, ChevronRight } from 'lucide-react'
+import { User, GraduationCap, Building2, Briefcase, MapPin, Search, ChevronLeft, ChevronRight, BadgeCheck } from 'lucide-react'
 
 interface TalentItem {
   id: string
@@ -23,6 +23,56 @@ interface TalentItem {
   nomeEmpresa?: string | null
   cargo?: string | null
   setor?: string | null
+  badgesReceived?: Array<{
+    id: string
+    badgeId: string
+    badgeName: string
+    badgeIcon?: string | null
+    badgeColor?: string | null
+    createdAt: string
+  }>
+}
+
+type TalentBadgeSummary = {
+  badgeId: string
+  badgeName: string
+  badgeIcon?: string | null
+  badgeColor?: string | null
+  count: number
+}
+
+const aggregateBadgeSummaries = (badges?: TalentItem['badgesReceived']): TalentBadgeSummary[] => {
+  if (!badges || badges.length === 0) {
+    return []
+  }
+
+  const grouped = new Map<
+    string,
+    {
+      badgeId: string
+      badgeName: string
+      badgeIcon?: string | null
+      badgeColor?: string | null
+      count: number
+    }
+  >()
+
+  badges.forEach((badge) => {
+    const existing = grouped.get(badge.badgeId)
+    if (existing) {
+      existing.count += 1
+    } else {
+      grouped.set(badge.badgeId, {
+        badgeId: badge.badgeId,
+        badgeName: badge.badgeName,
+        badgeIcon: badge.badgeIcon,
+        badgeColor: badge.badgeColor,
+        count: 1,
+      })
+    }
+  })
+
+  return Array.from(grouped.values()).sort((a, b) => b.count - a.count)
 }
 
 export function TalentsClient() {
@@ -99,47 +149,82 @@ export function TalentsClient() {
             <input value={departamento} onChange={(e) => { setPage(1); setDepartamento(e.target.value) }} placeholder="Departamento (Gestor)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={cargoGestor} onChange={(e) => { setPage(1); setCargoGestor(e.target.value) }} placeholder="Cargo (Gestor)" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <input value={cidade} onChange={(e) => { setPage(1); setCidade(e.target.value) }} placeholder="Cidade" className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
-            <input value={estado} onChange={(e) => { setPage(1); setEstado(e.target.value.toUpperCase().slice(0,2)) }} placeholder="UF" maxLength={2} className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
+            <input value={estado} onChange={(e) => { setPage(1); setEstado(e.target.value.toUpperCase().slice(0, 2)) }} placeholder="UF" maxLength={2} className="text-black w-full px-3 py-3 border rounded-lg focus:outline-none focus:ring-2 transition-all duration-300 border-gray-300 focus:ring-purple-500" />
             <button onClick={resetFilters} className="text-black px-3 py-3 rounded-lg border text-sm hover:bg-gray-50">Limpar filtros</button>
           </div>
         </div>
 
         {/* Lista */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {items.map((u) => (
-            <Link key={u.id} href={`/talents/${u.id}`} className="block bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
-                  {u.image ? <img src={u.image} alt={u.name || u.email} className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-white" />}
+          {items.map((u) => {
+            const aggregatedBadges = aggregateBadgeSummaries(u.badgesReceived)
+            return (
+              <Link key={u.id} href={`/talents/${u.id}`} className="block bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
+                    {u.image ? <img src={u.image} alt={u.name || u.email} className="w-full h-full object-cover" /> : <User className="w-5 h-5 text-white" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900">{u.name || u.email}</p>
+                    <p className="text-xs text-gray-600 capitalize">{u.userType}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{u.name || u.email}</p>
-                  <p className="text-xs text-gray-600 capitalize">{u.userType}</p>
+                <div className="text-xs text-gray-700 space-y-1">
+                  {(u.cidade || u.estado) && (
+                    <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{[u.cidade, u.estado].filter(Boolean).join(' / ')}</p>
+                  )}
+                  {u.userType === 'aluno' && (u.curso || u.universidade) && (
+                    <p className="flex items-center gap-1"><GraduationCap className="w-3 h-3" />{[u.curso, u.universidade].filter(Boolean).join(' - ')}</p>
+                  )}
+                  {u.userType === 'gestor' && (u.nomeUniversidade || u.departamento || u.cargoGestor) && (
+                    <p className="flex items-center gap-1"><Building2 className="w-3 h-3" />{[u.nomeUniversidade, u.departamento, u.cargoGestor].filter(Boolean).join(' • ')}</p>
+                  )}
+                  {(u.nomeEmpresa || u.cargo || u.setor) && (
+                    <p className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{[u.nomeEmpresa, u.cargo, u.setor].filter(Boolean).join(' • ')}</p>
+                  )}
                 </div>
-              </div>
-              <div className="text-xs text-gray-700 space-y-1">
-                {(u.cidade || u.estado) && (
-                  <p className="flex items-center gap-1"><MapPin className="w-3 h-3" />{[u.cidade, u.estado].filter(Boolean).join(' / ')}</p>
+                {aggregatedBadges.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-[11px] font-semibold text-gray-700 flex items-center gap-1 mb-1">
+                      <BadgeCheck className="w-3 h-3" />
+                      Emblemas
+                    </p>
+                    <div className="flex flex-wrap gap-1">
+                      {aggregatedBadges.slice(0, 4).map((badge) => (
+                        <span
+                          key={badge.badgeId}
+                          title={`${badge.badgeName} • Recebido ${badge.count} ${badge.count > 1 ? 'vezes' : 'vez'}`}
+                          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full border text-[10px] font-medium bg-white"
+                          style={{
+                            borderColor: badge.badgeColor || '#c4b5fd',
+                            color: badge.badgeColor || '#6b21a8',
+                          }}
+                        >
+                          <span>{badge.badgeIcon || '🏅'}</span>
+                          <span className="truncate max-w-[80px]">
+                            {badge.badgeName}
+                            {badge.count > 1 ? ` ×${badge.count}` : ''}
+                          </span>
+                        </span>
+                      ))}
+                      {aggregatedBadges.length > 4 && (
+                        <span className="text-[10px] text-gray-500 px-2 py-0.5 rounded-full border border-dashed border-gray-300">
+                          +{aggregatedBadges.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 )}
-                {u.userType === 'aluno' && (u.curso || u.universidade) && (
-                  <p className="flex items-center gap-1"><GraduationCap className="w-3 h-3" />{[u.curso, u.universidade].filter(Boolean).join(' - ')}</p>
-                )}
-                {u.userType === 'gestor' && (u.nomeUniversidade || u.departamento || u.cargoGestor) && (
-                  <p className="flex items-center gap-1"><Building2 className="w-3 h-3" />{[u.nomeUniversidade, u.departamento, u.cargoGestor].filter(Boolean).join(' • ')}</p>
-                )}
-                {(u.nomeEmpresa || u.cargo || u.setor) && (
-                  <p className="flex items-center gap-1"><Briefcase className="w-3 h-3" />{[u.nomeEmpresa, u.cargo, u.setor].filter(Boolean).join(' • ')}</p>
-                )}
-              </div>
-            </Link>
-          ))}
+              </Link>
+            )
+          })}
         </div>
 
         {/* Paginação */}
         <div className="flex items-center justify-between mt-4 text-sm text-gray-600">
-          <button disabled={page<=1} onClick={()=>setPage(p=>Math.max(1,p-1))} className="px-3 py-2 rounded border disabled:opacity-50 flex items-center gap-1"><ChevronLeft className="w-4 h-4"/>Anterior</button>
+          <button disabled={page <= 1} onClick={() => setPage(p => Math.max(1, p - 1))} className="px-3 py-2 rounded border disabled:opacity-50 flex items-center gap-1"><ChevronLeft className="w-4 h-4" />Anterior</button>
           <span>Página {page} de {totalPages}</span>
-          <button disabled={page>=totalPages} onClick={()=>setPage(p=>Math.min(totalPages,p+1))} className="px-3 py-2 rounded border disabled:opacity-50 flex items-center gap-1">Próxima<ChevronRight className="w-4 h-4"/></button>
+          <button disabled={page >= totalPages} onClick={() => setPage(p => Math.min(totalPages, p + 1))} className="px-3 py-2 rounded border disabled:opacity-50 flex items-center gap-1">Próxima<ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>
     </div>
