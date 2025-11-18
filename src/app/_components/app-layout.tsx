@@ -76,7 +76,7 @@ const navigationItems: NavItem[] = [
     },
     {
         name: 'Currículo/Relatório',
-        href: '/curriculo',
+        href: '/curriculum',
         icon: FileText,
         allowedUserTypes: ['aluno', 'recrutador', 'gestor']
     }
@@ -431,7 +431,7 @@ const CompactSidebarContent = ({
             {/* Header da sidebar - ultra compacto */}
             <div className="flex items-center justify-between p-2 border-b border-gray-200">
                 <div className="h-16 w-full flex items-center justify-center">
-                    <Logo compact={true}/>
+                    <Logo compact={true} />
                 </div>
                 {onClose && (
                     <button
