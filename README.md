@@ -36,6 +36,14 @@ Uma plataforma completa para conectar estudantes, empresas e universidades, faci
 - **Links Úteis**: Compartilhamento de recursos relacionados
 - **Permissões Hierárquicas**: Líder vs Participantes
 
+### 💼 **Sistema de Vagas e Candidaturas**
+- Listagem pública de vagas com filtros por modalidade, contrato, curso e localização
+- Ordenação inteligente para alunos com base no curso informado no perfil
+- Formulário completo para recrutadores com suporte a rascunhos, publicação e reaproveitamento
+- Dashboard de gestão com cards, duplicação de vagas e controle de status (aberta/fechada)
+- Detalhes da vaga com contato direto, benefícios e botão de candidatura contextualizado
+- Fluxo de candidaturas com histórico, notificações automáticas e decisões (aceitar/recusar)
+
 ### 🔔 **Sistema de Notificações**
 - Notificações em tempo real
 - Tipos: convites, medalhas, atualizações de atividades
@@ -187,6 +195,34 @@ Acesse [http://localhost:3000](http://localhost:3000) no seu navegador.
 - **Convites**: Adicionar novos participantes por email
 - **Links**: Gerenciar recursos da atividade
 - **Permissões**: Apenas o líder pode editar
+
+### 💼 **Sistema de Vagas**
+
+#### **Listagem de Vagas** (`/vacancies`)
+- Grid responsivo com cards priorizados pelo curso informado no perfil do aluno
+- Filtros avançados por modalidade, contrato, senioridade, curso, localização e status (visível ao recrutador)
+- Busca textual com persistência via URL e atualização instantânea dos resultados
+- Indicadores visuais de status, faixa salarial, benefícios e número de candidaturas recebidas
+- Botões contextuais: candidatar-se (aluno/gestor), editar (recrutador) ou instruções de acesso
+
+#### **Gestão do Recrutador** (`/vacancies/manage`)
+- Formulário completo com validação para criar, editar, duplicar e salvar vagas como rascunho
+- Campos específicos de mercado: faixa salarial, carga horária, benefícios, cursos preferenciais, canais de contato
+- Cards de métricas com contagem de vagas abertas, rascunhos e total de candidaturas
+- Ações rápidas por vaga (publicar rascunho, abrir/fechar, duplicar, visualizar) com feedback imediato
+
+#### **Detalhes da Vaga** (`/vacancies/[id]`)
+- Visão detalhada com descrição rica, requisitos, benefícios e canais de contato
+- Botão de candidatura com mensagens de sucesso/erro e histórico pessoal para o candidato
+- Painel de candidaturas para o recrutador com aceitar/recusar, notas e links para o perfil completo do candidato
+- Notificações automáticas: recrutadores são avisados a cada nova candidatura e candidatos recebem decisões em tempo real
+
+#### **Endpoints**
+- `POST /api/vacancies` – Criação e publicação de vagas (recrutadores)
+- `GET /api/vacancies` – Listagem com paginação, filtros e ordenação por aderência
+- `PATCH /api/vacancies/:id` – Atualização de vagas, incluindo status (aberta/fechada) e rascunhos
+- `POST /api/vacancies/:id/apply` – Candidatura de alunos/gestores com carta de apresentação e links de portfólio
+- `PATCH /api/vacancies/:id/applications/:applicationId` – Aceite ou recusa de candidaturas com notificação automática ao candidato
 
 ### 🔔 **Sistema de Notificações**
 - **Tipos de Notificação**:

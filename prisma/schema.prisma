@@ -66,6 +66,9 @@ model User {
   notifications        Notification[]
   badgesGiven          ActivityBadgeAward[]  @relation("BadgeAwardsBy")
   badgesReceived       ActivityBadgeAward[]  @relation("BadgeAwardsTo")
+  createdVacancies     Vacancy[]             @relation("VacancyRecruiter")
+  vacancyApplications  VacancyApplication[]  @relation("VacancyApplicant")
+  vacancyDecisions     VacancyApplication[]  @relation("VacancyDecider")
 
   @@unique([email])
   @@map("user")
@@ -240,6 +243,80 @@ model Notification {
   createdAt DateTime  @default(now())
 
   @@map("notification")
+}
+
+// Sistema de Vagas
+model Vacancy {
+  id               String    @id @default(cuid())
+  title            String
+  description      String
+  skills           String[]  @default([])
+  preferredCourses String[]  @default([])
+  keywords         String[]  @default([])
+  modality         String // 'remoto' | 'híbrido' | 'presencial'
+  seniority        String // 'estágio' | 'júnior' | 'pleno' | 'sênior'
+  contractType     String // 'clt' | 'pj' | 'bolsa' | etc
+  workload         String? // descrição da carga horária
+  salaryMin        Int? // valor mínimo em centavos
+  salaryMax        Int? // valor máximo em centavos
+  salaryCurrency   String? // ex: 'BRL'
+  benefits         String[]  @default([])
+  deadline         DateTime?
+  locationCity     String?
+  locationState    String?
+  locationCountry  String?
+  companyName      String?
+  contactEmail     String
+  contactPhone     String?
+  contactUrl       String?
+  contactNotes     String?
+  status           String    @default("OPEN") // 'OPEN' | 'CLOSED'
+  isDraft          Boolean   @default(false)
+  closedAt         DateTime?
+
+  recruiterId  String
+  recruiter    User                 @relation("VacancyRecruiter", fields: [recruiterId], references: [id], onDelete: Cascade)
+  applications VacancyApplication[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([isDraft])
+  @@index([modality])
+  @@index([locationState, locationCity])
+  @@index([preferredCourses], type: Gin)
+  @@index([keywords], type: Gin)
+  @@map("vacancy")
+}
+
+model VacancyApplication {
+  id          String  @id @default(cuid())
+  vacancyId   String
+  applicantId String
+  decidedById String?
+
+  vacancy   Vacancy @relation(fields: [vacancyId], references: [id], onDelete: Cascade)
+  applicant User    @relation("VacancyApplicant", fields: [applicantId], references: [id], onDelete: Cascade)
+  decidedBy User?   @relation("VacancyDecider", fields: [decidedById], references: [id])
+
+  coverLetter    String?
+  resumeUrl      String?
+  portfolioUrl   String?
+  additionalInfo String?
+  status         String    @default("PENDING") // 'PENDING' | 'ACCEPTED' | 'REJECTED'
+  decisionNote   String?
+  appliedAt      DateTime  @default(now())
+  decidedAt      DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([vacancyId, applicantId])
+  @@index([status])
+  @@index([vacancyId])
+  @@index([applicantId])
+  @@map("vacancy_application")
 }
 
 model ActivityBadgeAward {
