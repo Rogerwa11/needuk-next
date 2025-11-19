@@ -1,27 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withAuth, AuthenticatedRequest } from '@/lib/utils';
 
 interface RouteParams {
     params: Promise<{ id: string; participantId: string }>;
 }
 
 // DELETE - Remover participante da atividade
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAuth(async (request: AuthenticatedRequest, { params }: RouteParams) => {
     try {
         const resolvedParams = await params;
-
-        // Verificar se o usuário está autenticado
-        const session = await auth.api.getSession({
-            headers: request.headers
-        });
-
-        if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: 'Não autorizado' },
-                { status: 401 }
-            );
-        }
 
         const activityId = resolvedParams.id;
         const participantId = resolvedParams.participantId;
@@ -60,7 +48,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         }
 
         // Verificar se o usuário é o líder
-        if (activity.leaderId !== session.user.id) {
+        if (activity.leaderId !== request.user.id) {
             return NextResponse.json(
                 { error: 'Apenas o líder pode remover participantes' },
                 { status: 403 }
@@ -151,4 +139,4 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             { status: 500 }
         );
     }
-}
+});

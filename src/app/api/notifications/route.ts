@@ -9,6 +9,28 @@ const markAsReadSchema = z.object({
     notificationId: z.string(),
 });
 
+const INVITATION_TOKEN_REGEX = /\[invitation-id:([^\]]+)\]/;
+const VACANCY_LINK_REGEX = /\[vacancy-link:([^\]]+)\]/;
+
+const formatNotification = <T extends { message: string }>(notification: T) => {
+    const invitationMatch = notification.message.match(INVITATION_TOKEN_REGEX);
+    const vacancyMatch = notification.message.match(VACANCY_LINK_REGEX);
+
+    const cleanedMessage = notification.message
+        .replace(INVITATION_TOKEN_REGEX, '')
+        .replace(VACANCY_LINK_REGEX, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+    return {
+        ...notification,
+        rawMessage: notification.message,
+        message: cleanedMessage.length > 0 ? cleanedMessage : notification.message.trim(),
+        invitationId: invitationMatch?.[1] ?? null,
+        actionUrl: vacancyMatch?.[1] ?? null,
+    };
+};
+
 // GET - Buscar notificações do usuário
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
     try {
@@ -34,7 +56,7 @@ export const GET = withAuth(async (request: AuthenticatedRequest) => {
         });
 
         return successResponse('Notificações obtidas com sucesso', {
-            notifications,
+            notifications: notifications.map(formatNotification),
             unreadCount,
         });
 
@@ -76,7 +98,11 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
             select: notificationSelect,
         });
 
-        return successResponse('Notificação marcada como lida', { notification });
+        if (!notification) {
+            return notFoundResponse('Notificação não encontrada após atualização');
+        }
+
+        return successResponse('Notificação marcada como lida', { notification: formatNotification(notification) });
 
     } catch (error) {
         console.error('Erro ao marcar notificação como lida:', error);

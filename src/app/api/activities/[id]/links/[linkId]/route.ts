@@ -1,27 +1,15 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { withAuth, AuthenticatedRequest } from '@/lib/utils';
 
 interface RouteParams {
     params: Promise<{ id: string; linkId: string }>;
 }
 
 // DELETE - Remover link específico
-export async function DELETE(request: NextRequest, { params }: RouteParams) {
+export const DELETE = withAuth(async (request: AuthenticatedRequest, { params }: RouteParams) => {
     try {
         const resolvedParams = await params;
-
-        // Verificar se o usuário está autenticado
-        const session = await auth.api.getSession({
-            headers: request.headers
-        });
-
-        if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: 'Não autorizado' },
-                { status: 401 }
-            );
-        }
 
         const activityId = resolvedParams.id;
         const linkId = resolvedParams.linkId;
@@ -45,7 +33,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         const participant = await prisma.activityParticipant.findFirst({
             where: {
                 activityId,
-                userId: session.user.id,
+                userId: request.user.id,
             },
         });
 
@@ -73,4 +61,4 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
             { status: 500 }
         );
     }
-}
+});

@@ -11,14 +11,13 @@ export interface AuthenticatedRequest extends NextRequest {
     user: AuthenticatedUser;
 }
 
-
 export const withAuth = (
     handler: (request: AuthenticatedRequest, ...args: any[]) => Promise<NextResponse>
 ) => {
     return async (request: NextRequest, ...args: any[]): Promise<NextResponse> => {
         try {
             const session = await auth.api.getSession({
-                headers: request.headers
+                headers: request.headers,
             });
 
             if (!session?.user?.id) {
@@ -28,7 +27,6 @@ export const withAuth = (
                 );
             }
 
-            // Adicionar usuário ao request
             const authenticatedRequest = request as AuthenticatedRequest;
             authenticatedRequest.user = {
                 id: session.user.id,
@@ -58,5 +56,27 @@ export const withPermission = (
             { status: 403 }
         );
     }
+    return null;
+};
+
+export const ensureSameUser = (
+    requestUserId: string,
+    targetUserId: string | null | undefined,
+    customMessage?: string
+) => {
+    if (!targetUserId) {
+        return NextResponse.json(
+            { error: 'Identificador de usuário inválido' },
+            { status: 400 }
+        );
+    }
+
+    if (requestUserId !== targetUserId) {
+        return NextResponse.json(
+            { error: customMessage || 'Você não tem permissão para acessar este recurso' },
+            { status: 403 }
+        );
+    }
+
     return null;
 };

@@ -576,6 +576,34 @@ export async function ensureRecruiterUser(userId: string) {
     return user;
 }
 
+export async function notifyVacancyPublished(vacancy: { id: string; title: string }) {
+    const recipients = await prisma.user.findMany({
+        where: {
+            userType: {
+                in: ['aluno', 'gestor'],
+            },
+        },
+        select: {
+            id: true,
+        },
+    });
+
+    if (recipients.length === 0) {
+        return;
+    }
+
+    const message = `Uma nova vaga foi publicada: "${vacancy.title}". [vacancy-link:/vacancies/${vacancy.id}]`;
+
+    await prisma.notification.createMany({
+        data: recipients.map((recipient) => ({
+            userId: recipient.id,
+            type: 'vacancy_published',
+            title: vacancy.title,
+            message,
+        })),
+    });
+}
+
 export function parseBooleanParam(value: string | null): boolean | undefined {
     if (value === null) return undefined;
     const normalized = value.trim().toLowerCase();

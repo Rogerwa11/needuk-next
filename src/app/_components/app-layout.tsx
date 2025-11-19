@@ -17,7 +17,8 @@ import {
     Bell,
     Check,
     CheckCircle,
-    XCircle
+    XCircle,
+    ExternalLink
 } from 'lucide-react';
 import { RefreshCw } from 'lucide-react';
 import { Logo } from '@/app/_components/logo';
@@ -40,6 +41,9 @@ interface Notification {
     message: string;
     read: boolean;
     createdAt: string;
+    actionUrl?: string | null;
+    invitationId?: string | null;
+    rawMessage?: string | null;
 }
 
 interface NavItem {
@@ -170,9 +174,17 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
     };
 
     // Função helper para extrair ID do convite da mensagem
-    const extractInvitationId = (message: string): string | null => {
-        // Procura por padrão [invitation-id:ID] na mensagem
-        const match = message.match(/\[invitation-id:([^\]]+)\]/);
+    const extractInvitationId = (notification: Notification): string | null => {
+        if (notification.invitationId) return notification.invitationId;
+        const source = notification.rawMessage || notification.message;
+        const match = source.match(/\[invitation-id:([^\]]+)\]/);
+        return match ? match[1] : null;
+    };
+
+    const extractVacancyLink = (notification: Notification): string | null => {
+        if (notification.actionUrl) return notification.actionUrl;
+        const source = notification.rawMessage || notification.message;
+        const match = source.match(/\[vacancy-link:([^\]]+)\]/);
         return match ? match[1] : null;
     };
 
@@ -263,7 +275,9 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
                                             <div className="divide-y divide-gray-100">
                                                 {notifications?.slice(0, 5).map((notification) => {
                                                     const isInvitation = notification.type === 'invitation';
-                                                    const invitationId = extractInvitationId(notification.message);
+                                                    const invitationId = extractInvitationId(notification);
+                                                    const vacancyLink = extractVacancyLink(notification);
+                                                    const displayMessage = notification.message?.trim() || notification.rawMessage?.trim() || '';
 
                                                     return (
                                                         <div
@@ -277,9 +291,11 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
                                                                     <p className="text-xs font-medium text-gray-900 truncate">
                                                                         {notification.title}
                                                                     </p>
-                                                                    <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">
-                                                                        {notification.message.replace(/\[invitation-id:[^\]]+\]/, '').trim()}
-                                                                    </p>
+                                                                    {displayMessage && (
+                                                                        <p className="text-xs text-gray-600 mt-0.5 line-clamp-2">
+                                                                            {displayMessage}
+                                                                        </p>
+                                                                    )}
                                                                 </div>
                                                             </div>
 
@@ -305,6 +321,21 @@ export const AppLayout = ({ children, user }: AppLayoutProps) => {
                                                                         ✗
                                                                     </button>
                                                                 </div>
+                                                            )}
+
+                                                            {vacancyLink && (
+                                                                <Link
+                                                                    href={vacancyLink}
+                                                                    onClick={(e) => {
+                                                                        e.stopPropagation();
+                                                                        markAsRead(notification.id);
+                                                                        setNotificationsOpen(false);
+                                                                    }}
+                                                                    className="mt-2 inline-flex items-center gap-1 rounded bg-purple-50 px-2 py-1 text-xs font-medium text-purple-600 hover:bg-purple-100"
+                                                                >
+                                                                    <ExternalLink className="w-3 h-3" />
+                                                                    Ver vaga
+                                                                </Link>
                                                             )}
                                                         </div>
                                                     );

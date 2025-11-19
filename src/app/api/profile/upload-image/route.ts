@@ -1,23 +1,11 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/lib/auth';
+import { NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
 import { randomUUID } from 'crypto';
+import { withAuth, AuthenticatedRequest } from '@/lib/utils';
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: AuthenticatedRequest) => {
     try {
-        // Verificar se o usuário está autenticado
-        const session = await auth.api.getSession({
-            headers: request.headers
-        });
-
-        if (!session?.user?.id) {
-            return NextResponse.json(
-                { error: 'Não autorizado' },
-                { status: 401 }
-            );
-        }
-
         // Obter o FormData da requisição
         const formData = await request.formData();
         const file = formData.get('image') as File;
@@ -51,7 +39,7 @@ export async function POST(request: NextRequest) {
 
         // Criar nome único para o arquivo
         const fileExtension = file.name.split('.').pop() || 'jpg';
-        const fileName = `${session.user.id}-${randomUUID()}.${fileExtension}`;
+        const fileName = `${request.user.id}-${randomUUID()}.${fileExtension}`;
 
         // Criar diretório se não existir
         const uploadDir = join(process.cwd(), 'public', 'uploads', 'profiles');
@@ -83,4 +71,4 @@ export async function POST(request: NextRequest) {
             { status: 500 }
         );
     }
-}
+});

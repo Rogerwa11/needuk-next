@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { withAuth, validationErrorResponse, userProfileSelect, userBadgeAwardSelect, AuthenticatedRequest } from '@/lib/utils';
+import { withAuth, validationErrorResponse, userProfileSelect, userBadgeAwardSelect, AuthenticatedRequest, ensureSameUser } from '@/lib/utils';
 import { successResponse, serverErrorResponse, notFoundResponse } from '@/lib/utils';
 import { validationUtils } from '@/utils/validation-helpers';
 
@@ -60,6 +60,11 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
     try {
         // Obter os dados do corpo da requisição
         const body = await request.json();
+        const targetUserId = request.nextUrl.searchParams.get('userId') ?? request.user.id;
+        const permissionError = ensureSameUser(request.user.id, targetUserId, 'Você só pode atualizar o seu próprio perfil');
+        if (permissionError) {
+            return permissionError;
+        }
 
         // Validar os dados
         const validatedData = updateProfileSchema.parse(body);
@@ -69,7 +74,7 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
         const updatedUser = await prisma.$transaction(async (tx) => {
             // Atualiza dados básicos e aboutMe
             const user = await tx.user.update({
-                where: { id: request.user.id },
+                where: { id: targetUserId },
                 data: {
                     name: validatedData.name,
                     image: validatedData.image || null,
@@ -101,11 +106,11 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
 
             // Se experiências foram enviadas, substituir todas do usuário
             if (validatedData.experiences) {
-                await (tx as any).experience.deleteMany({ where: { userId: request.user.id } });
+                await (tx as any).experience.deleteMany({ where: { userId: targetUserId } });
                 if (validatedData.experiences.length > 0) {
                     await (tx as any).experience.createMany({
                         data: validatedData.experiences.map((e) => ({
-                            userId: request.user.id,
+                            userId: targetUserId,
                             company: e.company,
                             role: e.role,
                             details: e.details || null,
@@ -134,8 +139,14 @@ export const PUT = withAuth(async (request: AuthenticatedRequest) => {
 // Método GET para obter dados do perfil
 export const GET = withAuth(async (request: AuthenticatedRequest) => {
     try {
+        const targetUserId = request.nextUrl.searchParams.get('userId') ?? request.user.id;
+        const permissionError = ensureSameUser(request.user.id, targetUserId, 'Você só pode visualizar o seu próprio perfil');
+        if (permissionError) {
+            return permissionError;
+        }
+
         const user = await prisma.user.findUnique({
-            where: { id: request.user.id },
+            where: { id: targetUserId },
             select: ({
                 ...userProfileSelect,
                 aboutMe: true,

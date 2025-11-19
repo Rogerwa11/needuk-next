@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { createdResponse, forbiddenResponse, serverErrorResponse, successResponse, validationErrorResponse } from '@/lib/utils';
-import { ensureRecruiterUser, mapVacancyCreateData, normalizeVacancyFilters, sortVacanciesByPreference, vacancyListInclude, vacancyWriteSchema, VacancyViewer, buildVacancyWhere, canUserApply } from '@/lib/vacancies';
+import { ensureRecruiterUser, mapVacancyCreateData, normalizeVacancyFilters, sortVacanciesByPreference, vacancyListInclude, vacancyWriteSchema, VacancyViewer, buildVacancyWhere, canUserApply, notifyVacancyPublished } from '@/lib/vacancies';
 import { withAuth, AuthenticatedRequest } from '@/lib/utils';
 import { z } from 'zod';
 
@@ -166,6 +166,10 @@ export const POST = withAuth(async (request: AuthenticatedRequest) => {
             data,
             include: vacancyListInclude,
         });
+
+        if (!vacancy.isDraft && vacancy.status === 'OPEN') {
+            await notifyVacancyPublished({ id: vacancy.id, title: vacancy.title });
+        }
 
         return createdResponse('Vaga criada com sucesso', { vacancy });
     } catch (error) {

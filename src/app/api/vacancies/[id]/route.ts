@@ -9,8 +9,8 @@ import {
     successResponse,
     validationErrorResponse,
 } from '@/lib/utils';
-import { VacancyViewer, mapVacancyUpdateData, projectsVacancyForViewer, vacancyDetailInclude, vacancyUpdateSchema } from '@/lib/vacancies';
-import { withAuth, AuthenticatedRequest } from '@/lib/utils';
+import { VacancyViewer, mapVacancyUpdateData, projectsVacancyForViewer, vacancyDetailInclude, vacancyUpdateSchema, notifyVacancyPublished } from '@/lib/vacancies';
+import { withAuth, AuthenticatedRequest, ensureSameUser } from '@/lib/utils';
 import { z } from 'zod';
 
 export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
@@ -107,9 +107,16 @@ export const PATCH = withAuth(async (request: AuthenticatedRequest, context: { p
             return notFoundResponse('Vaga não encontrada');
         }
 
-        if (existing.recruiterId !== request.user.id) {
-            return forbiddenResponse('Somente o criador da vaga pode editá-la');
+        const ownershipError = ensureSameUser(request.user.id, existing.recruiterId, 'Somente o criador da vaga pode editá-la');
+        if (ownershipError) {
+            return ownershipError;
         }
+
+        const wasPublished = !existing.isDraft && existing.status === 'OPEN';
+        const nextStatus = parsed.status ?? existing.status;
+        const nextIsDraft = parsed.isDraft ?? existing.isDraft;
+        const willBePublished = !nextIsDraft && nextStatus === 'OPEN';
+        const shouldNotifyPublished = !wasPublished && willBePublished;
 
         const current = {
             title: existing.title,
@@ -137,6 +144,10 @@ export const PATCH = withAuth(async (request: AuthenticatedRequest, context: { p
             data,
             include: vacancyDetailInclude,
         });
+
+        if (shouldNotifyPublished) {
+            await notifyVacancyPublished({ id: updated.id, title: updated.title });
+        }
 
         const projection = projectsVacancyForViewer(updated, {
             id: request.user.id,
