@@ -4,6 +4,7 @@ import { BadgeCheck } from 'lucide-react'
 import Link from 'next/link'
 import { ActivityCard } from './_components/ActivityCard'
 import { ExperienceCard } from './_components/ExperienceCard'
+import { DownloadCurriculumButton } from './_components/DownloadCurriculumButton'
 
 export default async function TalentDetail({ params }: { params: Promise<{ id: string }> }) {
   const resolved = await params;
@@ -106,15 +107,17 @@ export default async function TalentDetail({ params }: { params: Promise<{ id: s
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-5xl mx-auto space-y-6">
         <div className="bg-white border rounded-lg p-6">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
-              {user.image ? <img src={user.image as string} alt={(user.name || user.email) as string} className="w-full h-full object-cover" /> : <span className="text-white text-lg">{String(user.name || user.email)[0]?.toUpperCase()}</span>}
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-600 to-pink-600 flex items-center justify-center overflow-hidden">
+                {user.image ? <img src={user.image as string} alt={(user.name || user.email) as string} className="w-full h-full object-cover" /> : <span className="text-white text-lg">{String(user.name || user.email)[0]?.toUpperCase()}</span>}
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900">{String(user.name || user.email)}</h1>
+                <p className="text-sm text-gray-600 capitalize">{user.userType}</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-xl font-bold text-gray-900">{String(user.name || user.email)}</h1>
-              <p className="text-sm text-gray-600 capitalize">{user.userType}</p>
-            </div>
-
+            <DownloadCurriculumButton talent={user as any} activities={activities as any} />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 text-sm">

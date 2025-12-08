@@ -82,7 +82,7 @@ const navigationItems: NavItem[] = [
         name: 'Currículo/Relatório',
         href: '/curriculum',
         icon: FileText,
-        allowedUserTypes: ['aluno', 'recrutador', 'gestor']
+        allowedUserTypes: ['aluno', 'gestor']
     }
 ];
 
