@@ -207,7 +207,7 @@ export const CurriculumPDF: React.FC<CurriculumPDFProps> = ({ data }) => {
                     <Text style={styles.contactInfo}>{user.email}</Text>
                     <Text style={styles.contactInfo}>{user.telefone}</Text>
                     <Text style={styles.contactInfo}>
-                        {user.endereco}, {user.cidade} - {user.estado}, {user.cep}
+                        {user.cep}
                     </Text>
                 </View>
 
